@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+msg_file="$1"
+subject="$(head -n1 "$msg_file")"
+# Allow generated subjects (merge/revert/autosquash) so users never reach for --no-verify.
+if printf '%s' "$subject" | grep -Eq '^(Merge |Revert |fixup! |squash! |amend! )'; then
+  exit 0
+fi
+if ! printf '%s' "$subject" | grep -Eq '^(feat|fix|chore|docs|style|refactor|test)(\([a-z0-9._/-]+\))?: .+'; then
+  echo "governance/commit-msg: subject must be Conventional Commits '<type>(scope)?: desc' (feat|fix|chore|docs|style|refactor|test) (Rule 7)." >&2
+  exit 1
+fi
+# SemVer sync: any 'version: X.Y.Z' line (last one) must byte-equal package.json version.
+ver_line="$(grep -E '^version:[[:space:]]*[0-9]+\.[0-9]+\.[0-9]+[[:space:]]*$' "$msg_file" | tail -n1 || true)"
+if [ -n "$ver_line" ]; then
+  declared="$(printf '%s' "$ver_line" | sed -E 's/^version:[[:space:]]*//; s/[[:space:]]*$//')"
+  pkg="$(node -p "require('./package.json').version" 2>/dev/null || true)"
+  if [ -z "$pkg" ]; then
+    echo "governance/commit-msg: cannot read package.json version (node unavailable?); skipping SemVer sync check for '$declared'." >&2
+  elif [ "$declared" != "$pkg" ]; then
+    echo "governance/commit-msg: version trailer '$declared' != package.json version '$pkg' (Rule 7 SemVer sync)." >&2
+    exit 1
+  fi
+fi
+exit 0

@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "kind": "cli-replay",
+  "replaySafe": true,
+  "command": ["bun", "--version"],
+  "cwd": ".",
+  "timeoutMs": 30000,
+  "expectedExitCode": 0,
+  "recordedStdout": "1.3.14\n",
+  "invariants": [{ "type": "regex", "value": "^[0-9]+\\.[0-9]+\\.[0-9]+" }]
+}

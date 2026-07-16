@@ -1,0 +1,181 @@
+{
+  "env": {
+    "node": true,
+    "es2022": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "airbnb/base"
+  ],
+  "globals": {
+    "Atomics": "readonly",
+    "SharedArrayBuffer": "readonly"
+  },
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "module"
+  },
+  "plugins": [
+    "@typescript-eslint",
+    "newline",
+    "import-newlines",
+    "@stylistic"
+  ],
+  "rules": {
+    "indent": [
+      "error",
+      2,
+      {
+        "SwitchCase": 1,
+        "ignoredNodes": [
+          "PropertyDefinition"
+        ]
+      }
+    ],
+    "max-len": [
+      "error",
+      150
+    ],
+    "no-extra-semi": "error",
+    "semi": [
+      "error",
+      "always"
+    ],
+    "no-shadow": "off",
+    "no-redeclare": "off",
+    "no-useless-constructor": "off",
+    "no-empty-function": "off",
+    "no-case-declarations": "off",
+    "no-use-before-define": "off",
+    "@typescript-eslint/no-shadow": "off",
+    "@typescript-eslint/no-var-requires": "off",
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+    "@typescript-eslint/no-empty-interface": "off",
+    "@typescript-eslint/camelcase": "off",
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "@typescript-eslint/no-unused-vars": "error",
+    "@typescript-eslint/no-useless-constructor": "error",
+    "@stylistic/type-annotation-spacing": "error",
+    "@stylistic/space-infix-ops": "error",
+    "@stylistic/comma-dangle": [
+      "error",
+      "always-multiline"
+    ],
+    "@stylistic/brace-style": "error",
+    "space-before-blocks": "off",
+    "@stylistic/space-before-blocks": "error",
+    "object-property-newline": [
+      "error",
+      {
+        "allowAllPropertiesOnSameLine": false,
+        "allowMultiplePropertiesPerLine": false
+      }
+    ],
+    "object-curly-newline": [
+      "error",
+      {
+        "ObjectExpression": {
+          "multiline": true,
+          "minProperties": 2
+        },
+        "ObjectPattern": {
+          "multiline": true,
+          "minProperties": 4,
+          "consistent": false
+        }
+      }
+    ],
+    "@stylistic/member-delimiter-style": [
+      "error",
+      {
+        "multiline": {
+          "delimiter": "semi",
+          "requireLast": true
+        },
+        "singleline": {
+          "delimiter": "semi",
+          "requireLast": false
+        },
+        "multilineDetection": "brackets"
+      }
+    ],
+    "array-element-newline": [
+      "error",
+      {
+        "minItems": 2,
+        "multiline": true
+      }
+    ],
+    "array-bracket-newline": [
+      "error",
+      {
+        "minItems": 2
+      }
+    ],
+    "import/prefer-default-export": "off",
+    "import/no-extraneous-dependencies": "off",
+    "import/extensions": [
+      "error",
+      "ignorePackages",
+      {
+        "ts": "never"
+      }
+    ],
+    "import-newlines/enforce": [
+      "error",
+      {
+        "items": 3,
+        "max-len": 151,
+        "semi": false
+      }
+    ],
+    "newline/object-property": [
+      "error",
+      {
+        "minItems": 4,
+        "tab": 2
+      }
+    ],
+    "newline/import-module": [
+      "error",
+      {
+        "minItems": 4,
+        "tab": 2
+      }
+    ],
+    "no-restricted-syntax": "off",
+    "no-continue": "off",
+    "no-await-in-loop": "off",
+    "no-underscore-dangle": "off",
+    "camelcase": "off",
+    "class-methods-use-this": "off",
+    "prefer-destructuring": "off",
+    "arrow-parens": "off",
+    "lines-between-class-members": "off",
+    "max-classes-per-file": "off",
+    "no-confusing-arrow": [
+      "error",
+      {
+        "allowParens": true,
+        "onlyOneSimpleParam": false
+      }
+    ]
+  },
+  "settings": {
+    "import/resolver": {
+      "typescript": {
+        "project": ["tsconfig.json"]
+      },
+      "node": {
+        "extensions": [
+          ".ts"
+        ],
+        "paths": [
+          "."
+        ]
+      }
+    }
+  }
+}

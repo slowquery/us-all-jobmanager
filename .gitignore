@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+*.pem
+
+# Logs
+logs/*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+
+# Test / coverage
+coverage/
+.nyc_output/
+
+# GJC session-scoped runtime state (NOT governance artifacts).
+# Keep committed: .gjc/rules/, .gjc/agents/, .gjc/config.yml (governance).
+# Ignore: per-session plans/state/ultragoal ledgers (runtime, session-scoped).
+.gjc/_session-*/
+.gjc/state/
+.gjc/plans/
+.gjc/ultragoal/

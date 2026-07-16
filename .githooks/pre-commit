@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+branch="$(git symbolic-ref --short HEAD 2>/dev/null || echo DETACHED)"
+if [ "$branch" = "master" ]; then
+  echo "governance/pre-commit: direct commits to 'master' are refused. Use a feature branch + squash PR (Rule 7)." >&2
+  exit 1
+fi
+# Worktree guard: src/** must be committed from a task worktree, not the main checkout (Rule 1).
+if [ "$(git rev-parse --git-dir)" = "$(git rev-parse --git-common-dir)" ]; then
+  # Capture into a variable (avoids pipefail+SIGPIPE false-negative); quotePath=false handles non-ASCII paths.
+  staged="$(git -c core.quotePath=false diff --cached --name-only)"
+  if printf '%s\n' "$staged" | grep -Eq '^src/'; then
+    echo "governance/pre-commit: src/** changes must be committed from a task worktree, not the main checkout (Rule 1)." >&2
+    exit 1
+  fi
+fi
+exit 0

@@ -1,0 +1,17 @@
+# Workspace-scoped GJC model bindings.
+# Merged as project settings for any gjc session started in this repo
+# (loaded by src/discovery/builtin.ts -> loadSettings; applied at level "project").
+#
+# Selectors: "provider/modelId" with optional ":effort" suffix
+# (e.g. anthropic/claude-fable-5:high). Efforts: minimal|low|medium|high|xhigh|max.
+
+task:
+  agentModelOverrides:
+    # Planning agent (ralplan / planner) -> Anthropic Fable 5
+    planner: anthropic/claude-fable-5
+    # Read-only architecture review -> Anthropic Opus 4.8
+    architect: anthropic/claude-opus-4-8
+    # Read-only plan critique -> Anthropic Opus 4.8
+    critic: anthropic/claude-opus-4-8
+    # Code implementation -> Anthropic Sonnet 5
+    executor: anthropic/claude-sonnet-5
