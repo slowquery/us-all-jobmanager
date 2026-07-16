@@ -26,3 +26,5 @@ scripts/export-session.sh <session-name>     # e.g. project-governance
 The script derives the KST date from the session start time, so re-running it overwrites the same
 `HISTORY/<date>-<session-name>/session.html` (stable path). Overrides: `GJC_SESSION_FILE`,
 `GJC_SESSION_DATE`. The interactive `/export` slash command remains available as an alternative.
+
+**필수:** 모든 PR에는 작업 당시까지의 export HTML이 커밋되어 있어야 한다. PR 갱신 시 재실행 후 재커밋.

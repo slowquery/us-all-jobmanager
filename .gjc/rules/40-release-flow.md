@@ -53,3 +53,7 @@ It resolves the current session (`$GJC_SESSION_ID`, override `GJC_SESSION_FILE`)
 derived from the SESSION START time (not "now"), so re-exports overwrite in place (fixed path).
 
 - 커밋 메시지 내용은 한글로 작성한다 (타입 프리픽스만 영문). `commit-msg` 훅이 강제.
+
+**필수**: 모든 PR은 생성·수정 시점 기준으로 export된 `HISTORY/<KST-session-date>/<session-name>/session.html`을
+**커밋된 상태로 포함**해야 한다(작업 당시까지의 스냅샷). PR을 갱신할 때마다 `scripts/export-session.sh <session-name>`를
+다시 실행해 덮어쓴 뒤 커밋한다.
