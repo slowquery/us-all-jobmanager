@@ -12,11 +12,13 @@ alwaysApply: true
 
 ## Rule 6 — Completion: PR + three specialist reviewers
 - Push the feature branch, `gh pr create`, then STOP for user confirmation.
+- **PR 제목은 한글로 작성**한다(Rule 9). 예: `docs: 프로젝트 README 추가`.
 - Spawn three review subagents (설계/보안/성능) defined in `.gjc/agents/review-*.md`; each posts
   concrete improvement comments to the PR. Aggregate findings, then propose verification + fixes.
 
 ## Rule 7 — Merge, commits, export
 - Merge ONLY after explicit user approval; **squash merge only**.
+- 머지 전 CI(`verify`: install→lint→build→unit→e2e)가 **통과**해야 한다. 테스트가 존재하면 반드시 통과(하드)해야 하며, 실패하면 **머지 금지** — 원인을 분석해 사용자에게 재확인한다. unit/e2e 테스트가 구현되면 GitHub branch protection의 required status check(`verify`)로 하드 강제한다. 사용자가 머지를 수락했더라도 테스트 실패 시 머지하지 않는다.
 - Squash/commit subject = Conventional Commits: `feat|fix|chore|docs|style|refactor|test`; bump
   SemVer synced to `package.json` `version`.
 - On every PR create/edit, run `/export HISTORY/<KST-date>-<session-name>/session.html` from the
@@ -38,3 +40,22 @@ alwaysApply: true
 
 Honest note: local prompts cannot stop a human clicking merge in the web UI; only the GitHub
 squash-only setting + branch protection on `master` constrain the UI.
+
+## Runnable session export (Rule 7)
+Session export is runnable directly (by the agent or a user) via a repo script, in addition to
+the interactive `/export` slash command:
+
+```bash
+scripts/export-session.sh <session-name>     # e.g. project-governance
+# or: yarn export:session <session-name>
+```
+
+It resolves the current session (`$GJC_SESSION_ID`, override `GJC_SESSION_FILE`), renders HTML via
+`gjc --export`, and writes `HISTORY/<KST-session-date>/<session-name>/session.html`. The KST date is
+derived from the SESSION START time (not "now"), so re-exports overwrite in place (fixed path).
+
+- 커밋 메시지 내용은 한글로 작성한다 (타입 프리픽스만 영문). `commit-msg` 훅이 강제.
+
+**필수**: 모든 PR은 생성·수정 시점 기준으로 export된 `HISTORY/<KST-session-date>/<session-name>/session.html`을
+**커밋된 상태로 포함**해야 한다(작업 당시까지의 스냅샷). PR을 갱신할 때마다 `scripts/export-session.sh <session-name>`를
+다시 실행해 덮어쓴 뒤 커밋한다.

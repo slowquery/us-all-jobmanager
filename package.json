@@ -9,6 +9,7 @@
   },
   "scripts": {
     "prepare": "git config core.hooksPath .githooks || true",
+    "export:session": "bash scripts/export-session.sh",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",

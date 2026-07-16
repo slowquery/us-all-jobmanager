@@ -1,0 +1,10 @@
+# Rule 9 — 한글 커뮤니케이션
+
+## 요약
+사용자 대상 제안/권고, **PR 제목**, **커밋 메시지 내용**은 한글로 작성한다. 코드/식별자는 기존 컨벤션을 따른다(타입 프리픽스만 영문).
+
+## 강제
+제안 프로즈는 어드바이저리; 커밋 메시지 한글은 하드(`commit-msg` 훅).
+
+## 정규
+[.gjc/rules/50-communication-korean.md](../../.gjc/rules/50-communication-korean.md)

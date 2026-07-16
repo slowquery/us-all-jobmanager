@@ -15,3 +15,16 @@ This repository is **public**. Session export HTML contains source, file paths, 
 discussion, and these exports are **committed** — so their full content is publicly visible.
 This exposure was explicitly reviewed and accepted by the repo owner. Do not export sessions that
 contain secrets/credentials; run a secret scan before committing an export.
+
+## Runnable export (no slash command needed)
+
+```bash
+scripts/export-session.sh <session-name>     # e.g. project-governance
+# or: yarn export:session <session-name>
+```
+
+The script derives the KST date from the session start time, so re-running it overwrites the same
+`HISTORY/<date>-<session-name>/session.html` (stable path). Overrides: `GJC_SESSION_FILE`,
+`GJC_SESSION_DATE`. The interactive `/export` slash command remains available as an alternative.
+
+**필수:** 모든 PR에는 작업 당시까지의 export HTML이 커밋되어 있어야 한다. PR 갱신 시 재실행 후 재커밋.
