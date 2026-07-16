@@ -51,3 +51,5 @@ scripts/export-session.sh <session-name>     # e.g. project-governance
 It resolves the current session (`$GJC_SESSION_ID`, override `GJC_SESSION_FILE`), renders HTML via
 `gjc --export`, and writes `HISTORY/<KST-session-date>/<session-name>/session.html`. The KST date is
 derived from the SESSION START time (not "now"), so re-exports overwrite in place (fixed path).
+
+- 커밋 메시지 내용은 한글로 작성한다 (타입 프리픽스만 영문). `commit-msg` 훅이 강제.

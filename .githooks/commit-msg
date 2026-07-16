@@ -2,23 +2,30 @@
 set -euo pipefail
 msg_file="$1"
 subject="$(head -n1 "$msg_file")"
-# Allow generated subjects (merge/revert/autosquash) so users never reach for --no-verify.
+# 생성 subject(merge/revert/autosquash)는 예외 — --no-verify 유도 방지.
 if printf '%s' "$subject" | grep -Eq '^(Merge |Revert |fixup! |squash! |amend! )'; then
   exit 0
 fi
+# Conventional Commits 형식 (타입 프리픽스는 영문).
 if ! printf '%s' "$subject" | grep -Eq '^(feat|fix|chore|docs|style|refactor|test)(\([a-z0-9._/-]+\))?: .+'; then
-  echo "governance/commit-msg: subject must be Conventional Commits '<type>(scope)?: desc' (feat|fix|chore|docs|style|refactor|test) (Rule 7)." >&2
+  echo "governance/commit-msg: 제목은 Conventional Commits '<type>(scope)?: 설명' 형식이어야 합니다 (feat|fix|chore|docs|style|refactor|test) (Rule 7)." >&2
   exit 1
 fi
-# SemVer sync: any 'version: X.Y.Z' line (last one) must byte-equal package.json version.
+# 커밋 메시지 내용은 한글로 작성 (Rule 7 / Rule 9). 타입 프리픽스만 영문, 설명에 한글 필수.
+desc="$(printf '%s' "$subject" | sed -E 's/^(feat|fix|chore|docs|style|refactor|test)(\([a-z0-9._/-]+\))?: //')"
+if ! printf '%s' "$desc" | grep -Pq '[\x{ac00}-\x{d7a3}]'; then
+  echo "governance/commit-msg: 커밋 제목 설명은 한글로 작성하세요 (Conventional 타입 프리픽스만 영문) (Rule 7)." >&2
+  exit 1
+fi
+# SemVer sync: 'version: X.Y.Z' 트레일러가 있으면 package.json version과 바이트 일치.
 ver_line="$(grep -E '^version:[[:space:]]*[0-9]+\.[0-9]+\.[0-9]+[[:space:]]*$' "$msg_file" | tail -n1 || true)"
 if [ -n "$ver_line" ]; then
   declared="$(printf '%s' "$ver_line" | sed -E 's/^version:[[:space:]]*//; s/[[:space:]]*$//')"
   pkg="$(node -p "require('./package.json').version" 2>/dev/null || true)"
   if [ -z "$pkg" ]; then
-    echo "governance/commit-msg: cannot read package.json version (node unavailable?); skipping SemVer sync check for '$declared'." >&2
+    echo "governance/commit-msg: package.json version을 읽을 수 없습니다 (node 미설치?); '$declared' SemVer 동기화 검사 건너뜀." >&2
   elif [ "$declared" != "$pkg" ]; then
-    echo "governance/commit-msg: version trailer '$declared' != package.json version '$pkg' (Rule 7 SemVer sync)." >&2
+    echo "governance/commit-msg: 버전 트레일러 '$declared' != package.json version '$pkg' (Rule 7 SemVer 동기화)." >&2
     exit 1
   fi
 fi
