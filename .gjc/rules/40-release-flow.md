@@ -18,6 +18,7 @@ alwaysApply: true
 
 ## Rule 7 — Merge, commits, export
 - Merge ONLY after explicit user approval; **squash merge only**.
+- 머지 전 CI(`verify`: install→lint→build→unit→e2e)가 **통과**해야 한다. 테스트가 존재하면 반드시 통과(하드)해야 하며, 실패하면 **머지 금지** — 원인을 분석해 사용자에게 재확인한다. unit/e2e 테스트가 구현되면 GitHub branch protection의 required status check(`verify`)로 하드 강제한다. 사용자가 머지를 수락했더라도 테스트 실패 시 머지하지 않는다.
 - Squash/commit subject = Conventional Commits: `feat|fix|chore|docs|style|refactor|test`; bump
   SemVer synced to `package.json` `version`.
 - On every PR create/edit, run `/export HISTORY/<KST-date>-<session-name>/session.html` from the

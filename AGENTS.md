@@ -11,7 +11,7 @@
 | 4 | 결정 로그 | 트레이드오프를 `logs/<KST-date>/<session-name>/`에 기록 | [rule-4](./docs/rules/rule-4-decision-log.md) | [30-decision-log](./.gjc/rules/30-decision-log.md) |
 | 5 | Write 승인 | 변경 전 공지·확인, 하드 게이트는 커밋/푸시 경계 | [rule-5](./docs/rules/rule-5-write-approval.md) | [40-release-flow](./.gjc/rules/40-release-flow.md) |
 | 6 | PR + 3인 리뷰 | 완료 시 PR(제목 한글) + 설계/보안/성능 리뷰 | [rule-6](./docs/rules/rule-6-review.md) | [40-release-flow](./.gjc/rules/40-release-flow.md) |
-| 7 | 릴리스 | squash 전용, PR제목·커밋 한글, SemVer, `HISTORY/` export 커밋 | [rule-7](./docs/rules/rule-7-release.md) | [40-release-flow](./.gjc/rules/40-release-flow.md) |
+| 7 | 릴리스 | squash 전용, PR제목·커밋 한글, SemVer, CI(테스트) 통과 후 머지, `HISTORY/` export 커밋 | [rule-7](./docs/rules/rule-7-release.md) | [40-release-flow](./.gjc/rules/40-release-flow.md) |
 | 8 | AGENTS/CLAUDE | 이 목차 + `docs/*` 분리, `.gjc/AGENTS.md` 생성 금지 | [rule-8](./docs/rules/rule-8-agents-claude.md) | (본 파일에서 정규) |
 | 9 | 한글 | 제안·PR제목·커밋 메시지 내용은 한글 | [rule-9](./docs/rules/rule-9-korean.md) | [50-communication-korean](./.gjc/rules/50-communication-korean.md) |
 
