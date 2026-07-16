@@ -12,6 +12,7 @@ alwaysApply: true
 
 ## Rule 6 — Completion: PR + three specialist reviewers
 - Push the feature branch, `gh pr create`, then STOP for user confirmation.
+- **PR 제목은 한글로 작성**한다(Rule 9). 예: `docs: 프로젝트 README 추가`.
 - Spawn three review subagents (설계/보안/성능) defined in `.gjc/agents/review-*.md`; each posts
   concrete improvement comments to the PR. Aggregate findings, then propose verification + fixes.
 
