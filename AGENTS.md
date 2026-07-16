@@ -28,7 +28,7 @@ On completion: PR from the worktree → user confirmation → 설계/보안/성�
 Normative: [.gjc/rules/40-release-flow.md](.gjc/rules/40-release-flow.md) · Agents: `.gjc/agents/review-{design,security,performance}.md`.
 
 ## Rule 7 — Merge, commits, export
-Merge only after explicit user approval; **squash merge only**; Conventional Commits + SemVer synced to `package.json`; `/export` the session to `HISTORY/<KST-date>-<session-name>/` on every PR create/edit.
+Merge only after explicit user approval; **squash merge only**; Conventional Commits + SemVer synced to `package.json`; export the session to `HISTORY/<KST-date>-<session-name>/` on every PR create/edit — run `scripts/export-session.sh <session-name>` (or the `/export` slash command).
 Normative: [.gjc/rules/40-release-flow.md](.gjc/rules/40-release-flow.md) · Enforced by `.githooks/{commit-msg,pre-merge-commit,pre-push}` + GitHub squash-only/branch protection on `master`.
 
 ## Rule 8 — AGENTS.md + CLAUDE.md

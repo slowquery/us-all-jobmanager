@@ -38,3 +38,16 @@ alwaysApply: true
 
 Honest note: local prompts cannot stop a human clicking merge in the web UI; only the GitHub
 squash-only setting + branch protection on `master` constrain the UI.
+
+## Runnable session export (Rule 7)
+Session export is runnable directly (by the agent or a user) via a repo script, in addition to
+the interactive `/export` slash command:
+
+```bash
+scripts/export-session.sh <session-name>     # e.g. project-governance
+# or: yarn export:session <session-name>
+```
+
+It resolves the current session (`$GJC_SESSION_ID`, override `GJC_SESSION_FILE`), renders HTML via
+`gjc --export`, and writes `HISTORY/<KST-session-date>/<session-name>/session.html`. The KST date is
+derived from the SESSION START time (not "now"), so re-exports overwrite in place (fixed path).
