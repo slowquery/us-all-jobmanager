@@ -5,7 +5,7 @@
 
 | # | 규칙 | 한줄 요약 | 가이드(docs) | 정규(.gjc/rules) |
 |---|---|---|---|---|
-| 1 | 워크트리 | 작업당 전용 git 워크트리, 메인 체크아웃 `src/**` 금지 | [rule-1](./docs/rules/rule-1-worktree.md) | [00-worktree](./.gjc/rules/00-worktree.md) |
+| 1 | 워크트리 | 작업당 전용 git 워크트리, 메인 체크아웃 파일 변경·커밋 전면 금지(산출물 종류 무관) | [rule-1](./docs/rules/rule-1-worktree.md) | [00-worktree](./.gjc/rules/00-worktree.md) |
 | 2 | ralplan | 설계 중요 작업은 합의 후 구현 | [rule-2](./docs/rules/rule-2-ralplan.md) | [10-ralplan-gate](./.gjc/rules/10-ralplan-gate.md) |
 | 3 | 아키텍처 | 헥사고날/클린, 의존성 안쪽으로, 도메인에 `@nestjs/*` 금지 | [rule-3](./docs/rules/rule-3-architecture.md) | [20-architecture-hexagonal](./.gjc/rules/20-architecture-hexagonal.md) |
 | 4 | 결정 로그 | 트레이드오프를 `logs/<KST-date>/<session-name>/`에 기록 | [rule-4](./docs/rules/rule-4-decision-log.md) | [30-decision-log](./.gjc/rules/30-decision-log.md) |

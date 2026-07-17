@@ -12,7 +12,7 @@ NestJS 기반 스케줄러 서버.
 
 | # | 요약 | 정규 문서 |
 |---|---|---|
-| 1 | 모든 작업은 전용 git worktree에서 진행 | [00-worktree](./.gjc/rules/00-worktree.md) |
+| 1 | 모든 작업은 전용 git worktree에서 진행 — 메인 체크아웃은 파일 변경·커밋 전면 금지 | [00-worktree](./.gjc/rules/00-worktree.md) |
 | 2 | 설계 중요 기능만 ralplan 합의 후 구현(사소한 수정은 직접) | [10-ralplan-gate](./.gjc/rules/10-ralplan-gate.md) |
 | 3 | Hexagonal/Clean Architecture; 도메인·유스케이스에 `@nestjs/*` 금지 | [20-architecture-hexagonal](./.gjc/rules/20-architecture-hexagonal.md) |
 | 4 | 설계 트레이드오프를 `logs/<KST-date>/<session-name>/`에 기록 | [30-decision-log](./.gjc/rules/30-decision-log.md) |
@@ -23,7 +23,7 @@ NestJS 기반 스케줄러 서버.
 | 9 | 사용자 제안은 한국어 | [50-communication-korean](./.gjc/rules/50-communication-korean.md) |
 
 강제(enforcement):
-- **하드**: `.githooks/`(git 훅: master 커밋/푸시·비-Conventional·SemVer 불일치 차단) + GitHub squash 전용 + `master` 브랜치 보호(Rule 7).
+- **하드**: `.githooks/`(git 훅: master 커밋/푸시·**메인 체크아웃의 모든 커밋**·비-Conventional·SemVer 불일치 차단) + GitHub squash 전용 + `master` 브랜치 보호(Rule 1·7).
 - **하드**: 리뷰어 에이전트(`.gjc/agents/review-*.md`)는 프론트매터 `tools:` 화이트리스트로 write/edit 도구 자체를 제외.
 - **어드바이저리**: 나머지 규칙은 `AGENTS.md`/`CLAUDE.md`/`.gjc/rules` 프로즈.
 
