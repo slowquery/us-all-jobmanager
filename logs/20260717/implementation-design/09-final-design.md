@@ -100,6 +100,7 @@ interface Job {
 ### 관측성 (06 + 확정 #12)
 
 - 트레이싱: Tempo 최소 실장 확정 — HTTP 인바운드 스팬 + 스케줄러 tick 루트 스팬→job별 자식 스팬. 계측은 adapter 2곳 한정, 도메인 무침투. `@opentelemetry/sdk-node` + otlp exporter 2패키지만.
+- **traceId 규약(06 확정)**: 발급은 OTel **active span**의 트레이스 ID를 정본으로 하며 형식은 **32-hex** 소문자. 무Tempo 로컬도 sdk-node 상시 초기화가 정본이고, SDK 미초기화 경로 한정 동일 형식 fallback(요청 내 상관 미보장)을 둔다. 전파는 `startActiveSpan` 컨텍스트 상속, 읽기는 `LoggerPort` 구현체(`FileLoggerAdapter`) 한정.
 - 로그 수집: logs.txt(NDJSON)를 Promtail/Alloy가 tail(이중 기록 없음). 대시보드 패널 6종(상태 분포, 처리량·지연 p50/p95, tick 성공률·소요, 에러율, 전이 흐름, 락 대기 — 각 Loki/Tempo 소스는 06 참조).
 - docker-compose 구축·계측 코드는 구현 세션 산출물.
 
@@ -108,6 +109,7 @@ interface Job {
 - domain guard 순수 유닛(retryCount 상한 케이스 포함) / usecase 유닛(포트 목) / adapter e2e(supertest + 임시 파일 격리·teardown).
 - 스케줄러: 수동 tick 트리거(데코레이터/유스케이스 분리 활용, fake timer 기각).
 - 동시성 회귀: 02 race 시나리오를 Promise.all로 재현 — ① failed 시딩 + PATCH pending ×2(1성공/1거부 409, 최종 pending 1회 전이) ② PATCH↔스케줄러 배치(무손실 + 무효 전이 방지). **withBatch 원자성 테스트 추가**: 배치 중 일부 거부 시에도 write 1회·스냅숏 일관 커밋 assert.
+- **동시성 문제 재현(08 확정, 사용자 채택 C-1~C-5 전부)**: 회귀와 역할이 구분된 "무보호" baseline 재현 5종 — C-1 무보호 lost update A/B(지연 주입, 큐 우회는 테스트 파일 한정), C-2 스냅숏 비일관(N회 반복+baseline 한정 skip 규약, 보호 경로 회귀 assert는 항상 하드 실패), C-3 고부하 스트레스 불변식(N=50), C-4 tick 중복 재현(플래그 토글 구성 주입), C-5 크래시 유실 시뮬레이션(write-behind 테스트 더블, Ponytail 1단 판정의 사용자 확정 예외).
 
 ## Pros
 - 사용자 컨펌을 거친 결정만 담겨 구현 세션에서 재논쟁 여지가 없다(문서 충돌 시 우선순위도 명시).
@@ -134,6 +136,6 @@ interface Job {
 - **무제한 재시도**: 무한 루프 차단 우선으로 상한 3회 확정.
 
 ## Follow-ups
-- supersede 목록(구현 시 본 문서 우선): ① 04 §검증 실패 422 → **400**, ② 01 §Follow-up retryCount 보류 → **채택(3회)** + guard·전이표 확장, ③ 02 §포트 → **withBatch 추가**, ④ 03 §Strategy 이연 → **얇은 Strategy 채택** + 큐/워커 확장 경로 명시, ⑤ 05 §appendFile → **단일 write stream**, ⑥ 05·04 → **보안 조항 2건 명문화**.
+- supersede 목록(구현 시 본 문서 우선): ① 04 §검증 실패 422 → **400**, ② 01 §Follow-up retryCount 보류 → **채택(3회)** + guard·전이표 확장, ③ 02 §포트 → **withBatch 추가**, ④ 03 §Strategy 이연 → **얇은 Strategy 채택** + 큐/워커 확장 경로 명시, ⑤ 05 §appendFile → **단일 write stream**, ⑥ 05·04 → **보안 조항 2건 명문화**, ⑦ 05·06 §traceId 발급 이연 → **OTel active span 정본(32-hex)·상시 초기화 확정**(사용자 채택, ralplan 인터뷰), ⑧ 08 §동시성 회귀 2건 한정 → **C-1~C-5 baseline 재현 5종 추가**(사용자 확정 전부 채택, C-5 Ponytail 예외 포함).
 - `.gjc/rules/60-ponytail.md` 편입 세션(Rule 5 승인 경유) — 07 초안 골격 사용.
 - 코드 구현 세션: 본 문서를 정본 입력으로 별도 진행(트레이싱 계측·docker-compose 포함).

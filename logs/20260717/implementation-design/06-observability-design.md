@@ -57,6 +57,15 @@ REQUIREMENTS.md는 `logs.txt` 로깅만 명시적으로 요구하지만, 이 저
 - traceId는 05의 NDJSON 로그 라인과 Tempo 스팬의 트레이스 ID를 동일 값으로 공유해, Grafana에서
   로그 라인 → Tempo 스팬 상호 이동(exemplar/derived field)이 가능하게 한다.
 
+#### traceId 발급·전파 규약 확정
+
+- **① 발급**: traceId는 OTel **active span**의 트레이스 ID를 정본(canonical source)으로 한다 — 별도 UUID 생성 로직을 두지 않는다.
+- **② 상시 초기화(정본)**: 로컬 무Tempo 환경(exporter 미연결)에서도 `@opentelemetry/sdk-node`를 `main.ts` 부트스트랩에서 상시 초기화한다. exporter 전송 실패는 스팬 생성·컨텍스트 전파에 무해하며(백그라운드 배치 전송 실패일 뿐), active span은 항상 유효한 **32-hex** 소문자 트레이스 ID를 요청/tick 시작 시점에 발급해 요청 내 상관(correlation)을 보존한다. Tempo 연결 여부와 무관하게 이 경로가 항상 기본값이다.
+- **③ 미초기화 한계(fallback)**: SDK 자체가 초기화되지 않은 극단 경로(부트스트랩 실패 등)에서만, 05가 정의하는 것과 동일 형식(32-hex 소문자)의 라인 단위 fallback traceId를 발급한다. 이 fallback은 **요청 내 상관을 보장하지 못한다**(로그 라인마다 독립 생성) — SDK 미초기화라는 예외 경로의 명시적 한계로 남기고, 정상 경로(②)를 대체하지 않는다.
+- **④ 전파**: `startActiveSpan(...)`으로 연 스팬의 컨텍스트를 OTel context API가 상속·전파한다. 별도 AsyncLocalStorage 전파 계층을 두지 않는다(Alternatives considered 참조).
+- **⑤ 읽기**: traceId를 로그 라인에 싣는 책임은 infrastructure의 `FileLoggerAdapter` 한정이다 — `LoggerPort`를 통해 애플리케이션이 전달한 이벤트 데이터에 발급 시점의 active span traceId를 부여해 기록한다.
+- **⑥ 패키지 경계**: `@opentelemetry/api`는 `@opentelemetry/sdk-node`가 재노출하는 인터페이스 계층(타입·context api)이며, #12 "2패키지"(sdk-node + exporter-trace-otlp-http) 카운트에는 포함하지 않는다.
+
 #### 스팬 트리 다이어그램 (텍스트)
 
 ```
@@ -149,8 +158,8 @@ REQUIREMENTS.md는 `logs.txt` 로깅만 명시적으로 요구하지만, 이 저
 ## Side effects
 
 - traceId가 05의 로그 라인과 Tempo 스팬 양쪽에 실리므로, 운영자는 Grafana에서 로그↔트레이스를
-  오갈 수 있지만 두 시스템의 traceId 형식(예: OTel 128비트 hex)을 05의 `LoggerPort`가 그대로
-  수용하도록 맞춰야 한다(구현 세션에서 traceId 발급 지점을 OTel 컨텍스트로 통일).
+  오갈 수 있지만 두 시스템의 traceId 형식은 위 "traceId 발급·전파 규약 확정" 절이 정한 32-hex
+  소문자 OTel active span 정본을 05의 `LoggerPort`가 그대로 수용한다(발급 지점 확정 완료).
 - `@opentelemetry/sdk-node` 도입은 07의 신규 의존성 도입 게이트를 경유해야 한다(R7).
 
 ## Alternatives considered
@@ -171,6 +180,3 @@ REQUIREMENTS.md는 `logs.txt` 로깅만 명시적으로 요구하지만, 이 저
   수행하며, 07의 신규 의존성 게이트를 경유한다.
 - 02의 임계구역 내부 세부 단계(guard 평가/write)를 자식 스팬으로 더 세분화할지는 실측 트레이스
   데이터 확보 이후 재검토한다.
-- 05([05-logging-design.md](./05-logging-design.md))가 정의한 `LoggerPort`와 본 문서의
-  트레이싱 계측이 동일 traceId를 공유하도록, 구현 세션에서 traceId 발급 지점(OTel 컨텍스트 vs
-  자체 UUID)을 단일화해야 한다.
