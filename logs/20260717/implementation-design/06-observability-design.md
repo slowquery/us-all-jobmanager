@@ -64,7 +64,7 @@ REQUIREMENTS.md는 `logs.txt` 로깅만 명시적으로 요구하지만, 이 저
 - **③ 미초기화 한계(fallback)**: SDK 자체가 초기화되지 않은 극단 경로(부트스트랩 실패 등)에서만, 05가 정의하는 것과 동일 형식(32-hex 소문자)의 라인 단위 fallback traceId를 발급한다. 이 fallback은 **요청 내 상관을 보장하지 못한다**(로그 라인마다 독립 생성) — SDK 미초기화라는 예외 경로의 명시적 한계로 남기고, 정상 경로(②)를 대체하지 않는다.
 - **④ 전파**: `startActiveSpan(...)`으로 연 스팬의 컨텍스트를 OTel context API가 상속·전파한다. 별도 AsyncLocalStorage 전파 계층을 두지 않는다(Alternatives considered 참조).
 - **⑤ 읽기**: traceId를 로그 라인에 싣는 책임은 infrastructure의 `FileLoggerAdapter` 한정이다 — `LoggerPort`를 통해 애플리케이션이 전달한 이벤트 데이터에 발급 시점의 active span traceId를 부여해 기록한다.
-- **⑥ 패키지 경계**: `@opentelemetry/api`는 `@opentelemetry/sdk-node`가 재노출하는 인터페이스 계층(타입·context api)이며, #12 "2패키지"(sdk-node + exporter-trace-otlp-http) 카운트에는 포함하지 않는다.
+- **⑥ 패키지 경계**: `@opentelemetry/api`는 `@opentelemetry/sdk-node`의 **peerDependency**인 별도 인터페이스 패키지다(재노출/번들이 아니며, 글로벌 싱글턴 유지를 위해 SDK와 분리되어 있다 — npm 7+에서는 sdk-node 설치 시 자동 설치됨). #12의 "2패키지"는 **직접 도입을 결정하는 계측 단위**(sdk-node + exporter-trace-otlp-http)를 의미하며, api는 그 전제 인터페이스로 병행 설치될 뿐 별도의 도입 결정 대상이 아니므로 카운트에 포함하지 않는다(07 의존성 게이트 기록 시 api 병행 설치 사실은 명기).
 
 #### 스팬 트리 다이어그램 (텍스트)
 
@@ -123,7 +123,10 @@ REQUIREMENTS.md는 `logs.txt` 로깅만 명시적으로 요구하지만, 이 저
 ### 헥사고날 배치
 
 - **adapters**: `LoggingInterceptor`/`TracingInterceptor`(HTTP 스팬), `JobSchedulerAdapter`(tick
-  루트 스팬). OpenTelemetry API 호출은 이 계층에 한정된다.
+  루트 스팬). **스팬 생성·계측 API 호출은 이 계층에 한정**된다.
+- **infrastructure(좁은 예외)**: `FileLoggerAdapter`는 스팬을 생성하지 않고 `trace.getActiveSpan()`의
+  **read-only 컨텍스트 조회만** 수행해 traceId/spanId를 로그 라인에 기입한다 — 위 "⑤ 읽기" 규약과
+  정합하며, 계측(스팬 생성) 한정 원칙의 유일한 읽기 전용 예외로 명시한다.
 - **application**: `ProcessPendingJobsUseCase`는 job별 처리 결과(성공/실패, 소요 데이터)만
   반환하고, 자식 스팬 생성은 adapter가 유스케이스 호출을 감싸는 방식으로 수행한다(application이
   OpenTelemetry API를 직접 import하지 않음).
