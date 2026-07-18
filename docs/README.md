@@ -13,3 +13,4 @@
 - [Rule 7 — 릴리스(스쿼시/커밋/export)](./rules/rule-7-release.md)
 - [Rule 8 — AGENTS.md/CLAUDE.md](./rules/rule-8-agents-claude.md)
 - [Rule 9 — 한글 커뮤니케이션](./rules/rule-9-korean.md)
+- [Rule 10 — 코드 문서화](./rules/rule-10-code-documentation.md)
