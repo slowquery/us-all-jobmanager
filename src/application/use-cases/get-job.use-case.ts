@@ -22,8 +22,14 @@ export class GetJobUseCase {
   async execute(id: string): Promise<GetJobResult> {
     const job = await this.jobRepository.findById(id);
     if (!job) {
-      return { ok: false, reason: 'NOT_FOUND' };
+      return {
+        ok: false,
+        reason: 'NOT_FOUND',
+      };
     }
-    return { ok: true, job };
+    return {
+      ok: true,
+      job,
+    };
   }
 }

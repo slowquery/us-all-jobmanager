@@ -1,4 +1,11 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Inject } from '@nestjs/common';
+import {
+  ArgumentsHost,
+  Catch,
+  ExceptionFilter,
+  HttpException,
+  HttpStatus,
+  Inject,
+} from '@nestjs/common';
 import { Response } from 'express';
 import { LoggerPort } from '../../application/ports/logger.port';
 import { LOGGER_PORT } from '../tokens';
@@ -37,7 +44,10 @@ export class HttpExceptionFilter implements ExceptionFilter<unknown> {
   private resolve(exception: unknown): ResolvedError {
     if (exception instanceof ApiException) {
       const body = exception.getResponse() as ApiErrorBody;
-      return { status: exception.getStatus(), ...body };
+      return {
+        status: exception.getStatus(),
+        ...body,
+      };
     }
 
     if (exception instanceof HttpException) {
@@ -46,9 +56,17 @@ export class HttpExceptionFilter implements ExceptionFilter<unknown> {
         return this.resolveValidationFailure(exception);
       }
       if (status === HttpStatus.NOT_FOUND) {
-        return { status, code: 'NOT_FOUND', message: exception.message };
+        return {
+          status,
+          code: 'NOT_FOUND',
+          message: exception.message,
+        };
       }
-      return { status, code: status >= 500 ? 'INTERNAL' : 'HTTP_ERROR', message: exception.message };
+      return {
+        status,
+        code: status >= 500 ? 'INTERNAL' : 'HTTP_ERROR',
+        message: exception.message,
+      };
     }
 
     return this.resolveInternalError(exception);
@@ -81,6 +99,10 @@ export class HttpExceptionFilter implements ExceptionFilter<unknown> {
     } catch {
       // 로깅 실패가 에러 응답 생성 자체를 막지 않는다(로깅 실패 격리 조항).
     }
-    return { status: HttpStatus.INTERNAL_SERVER_ERROR, code: 'INTERNAL', message: '서버 오류가 발생했습니다.' };
+    return {
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      code: 'INTERNAL',
+      message: '서버 오류가 발생했습니다.',
+    };
   }
 }

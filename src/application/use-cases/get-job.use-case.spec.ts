@@ -11,7 +11,10 @@ describe('GetJobUseCase', () => {
 
     const result = await useCase.execute('a');
 
-    expect(result).toEqual({ ok: true, job });
+    expect(result).toEqual({
+      ok: true,
+      job,
+    });
   });
 
   it('존재하지 않는 id면 ok:false, reason:NOT_FOUND를 반환한다', async () => {
@@ -20,6 +23,9 @@ describe('GetJobUseCase', () => {
 
     const result = await useCase.execute('missing');
 
-    expect(result).toEqual({ ok: false, reason: 'NOT_FOUND' });
+    expect(result).toEqual({
+      ok: false,
+      reason: 'NOT_FOUND',
+    });
   });
 });

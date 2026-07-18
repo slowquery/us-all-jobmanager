@@ -45,11 +45,17 @@ export class PatchJobUseCase {
    * @returns 성공 시 갱신된 Job, 실패 시 사유(NOT_FOUND/INVALID_TRANSITION/RETRY_LIMIT_EXCEEDED)
    */
   async execute(input: PatchJobInput): Promise<TransitionResult> {
-    const patch = { title: input.title, description: input.description };
+    const patch = {
+      title: input.title,
+      description: input.description,
+    };
 
     const current = await this.jobRepository.findById(input.id);
     if (!current) {
-      return { ok: false, reason: 'NOT_FOUND' };
+      return {
+        ok: false,
+        reason: 'NOT_FOUND',
+      };
     }
 
     const target: JobStatus = input.status === 'pending' ? 'pending' : current.status;

@@ -76,7 +76,10 @@ export class FileLoggerAdapter implements LoggerPort {
   private resolveTraceContext(): { traceId: string; spanId?: string } {
     const spanContext = trace.getActiveSpan()?.spanContext();
     if (spanContext) {
-      return { traceId: spanContext.traceId, spanId: spanContext.spanId };
+      return {
+        traceId: spanContext.traceId,
+        spanId: spanContext.spanId,
+      };
     }
     return { traceId: randomBytes(TRACE_ID_BYTES).toString('hex') };
   }

@@ -19,6 +19,9 @@ describe('GetJobsUseCase', () => {
     const jobs = await useCase.execute();
 
     expect(jobs).toHaveLength(2);
-    expect(jobs.map((job) => job.id).sort()).toEqual(['a', 'b']);
+    expect(jobs.map((job) => job.id).sort()).toEqual([
+      'a',
+      'b',
+    ]);
   });
 });

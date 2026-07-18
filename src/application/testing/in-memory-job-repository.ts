@@ -61,14 +61,20 @@ export class InMemoryJobRepository implements JobRepository {
   async withTransition(id: string, target: JobStatus, patch?: JobPatch): Promise<TransitionResult> {
     const current = this.jobs.get(id);
     if (!current) {
-      return { ok: false, reason: 'NOT_FOUND' };
+      return {
+        ok: false,
+        reason: 'NOT_FOUND',
+      };
     }
 
     const isFieldOnlyUpdate = target === current.status;
     if (!isFieldOnlyUpdate) {
       const error = transitionError(current, target);
       if (error) {
-        return { ok: false, reason: error };
+        return {
+          ok: false,
+          reason: error,
+        };
       }
     }
 
@@ -83,7 +89,10 @@ export class InMemoryJobRepository implements JobRepository {
       updatedAt: new Date().toISOString(),
     };
     this.jobs.set(id, updated);
-    return { ok: true, job: updated };
+    return {
+      ok: true,
+      job: updated,
+    };
   }
 
   async withBatch(ids: string[], target: JobStatus): Promise<BatchResult> {
@@ -95,10 +104,16 @@ export class InMemoryJobRepository implements JobRepository {
       if (result.ok) {
         committed.push(result.job);
       } else {
-        rejected.push({ id, reason: result.reason });
+        rejected.push({
+          id,
+          reason: result.reason,
+        });
       }
     }
 
-    return { committed, rejected };
+    return {
+      committed,
+      rejected,
+    };
   }
 }

@@ -1,4 +1,10 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, unlinkSync } from 'fs';
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  unlinkSync,
+} from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { context, trace } from '@opentelemetry/api';
@@ -39,7 +45,10 @@ describe('FileLoggerAdapter', () => {
   });
 
   afterEach(() => {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, {
+      recursive: true,
+      force: true,
+    });
   });
 
   it('이벤트 1건을 NDJSON 한 줄로 기록하고 공통 필드를 포함한다', async () => {
@@ -74,8 +83,21 @@ describe('FileLoggerAdapter', () => {
   it('여러 이벤트를 기록하면 라인 수만큼 write되고 각 라인이 독립적으로 파싱된다', async () => {
     const logger = new FileLoggerAdapter(logPath);
 
-    logger.log({ type: 'error', level: 'error', source: 'http', message: 'boom', errorCode: 'INTERNAL' });
-    logger.log({ type: 'tick', level: 'info', source: 'scheduler', message: 'tick start', tickId: 't1', phase: 'start' });
+    logger.log({
+      type: 'error',
+      level: 'error',
+      source: 'http',
+      message: 'boom',
+      errorCode: 'INTERNAL',
+    });
+    logger.log({
+      type: 'tick',
+      level: 'info',
+      source: 'scheduler',
+      message: 'tick start',
+      tickId: 't1',
+      phase: 'start',
+    });
     const content = await waitForContent(logPath);
 
     const lines = content.trim().split('\n');
@@ -86,7 +108,13 @@ describe('FileLoggerAdapter', () => {
   it('active span이 없으면 32-hex fallback traceId를 발급하고 spanId는 생략한다', async () => {
     const logger = new FileLoggerAdapter(logPath);
 
-    logger.log({ type: 'error', level: 'error', source: 'http', message: 'no span here', errorCode: 'X' });
+    logger.log({
+      type: 'error',
+      level: 'error',
+      source: 'http',
+      message: 'no span here',
+      errorCode: 'X',
+    });
     const content = await waitForContent(logPath);
 
     const parsed = JSON.parse(content.trim());
@@ -108,7 +136,13 @@ describe('FileLoggerAdapter', () => {
       const tracer = trace.getTracer('test');
 
       await tracer.startActiveSpan('test-span', async (span) => {
-        logger.log({ type: 'error', level: 'error', source: 'http', message: 'within span', errorCode: 'X' });
+        logger.log({
+          type: 'error',
+          level: 'error',
+          source: 'http',
+          message: 'within span',
+          errorCode: 'X',
+        });
         span.end();
       });
       const content = await waitForContent(logPath);
@@ -147,7 +181,13 @@ describe('FileLoggerAdapter', () => {
 
     try {
       const logger = new FileLoggerAdapter();
-      logger.log({ type: 'error', level: 'error', source: 'http', message: 'default path', errorCode: 'X' });
+      logger.log({
+        type: 'error',
+        level: 'error',
+        source: 'http',
+        message: 'default path',
+        errorCode: 'X',
+      });
       const content = await waitForContent(defaultLogPath);
 
       expect(JSON.parse(content.trim()).message).toBe('default path');

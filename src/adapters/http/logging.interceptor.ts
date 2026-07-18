@@ -1,4 +1,12 @@
-import { CallHandler, ExecutionContext, HttpException, HttpStatus, Inject, Injectable, NestInterceptor } from '@nestjs/common';
+import {
+  CallHandler,
+  ExecutionContext,
+  HttpException,
+  HttpStatus,
+  Inject,
+  Injectable,
+  NestInterceptor,
+} from '@nestjs/common';
 import { context as otelContext, trace } from '@opentelemetry/api';
 import { Request, Response } from 'express';
 import { Observable } from 'rxjs';
@@ -42,22 +50,18 @@ export class LoggingInterceptor implements NestInterceptor {
     // 벗어나 있어 async_hooks 계보가 스팬 컨텍스트를 계승하지 못한다. 실제 subscribe() 호출
     // 자체를 otelContext.with() 내부에서 수행해야 이후 컨트롤러→유스케이스→infrastructure로
     // 이어지는 비동기 체인이 이 스팬을 상속한다.
-    return new Observable((subscriber) =>
-      otelContext.with(activeContext, () =>
-        next.handle().pipe(
-          tap(() => {
-            this.logCompletion(method, path, response.statusCode, startedAt);
-            span.end();
-          }),
-          catchError((error: unknown) => {
-            const { statusCode, errorCode } = this.resolveErrorInfo(error);
-            this.logCompletion(method, path, statusCode, startedAt, errorCode);
-            span.end();
-            throw error;
-          }),
-        ).subscribe(subscriber),
-      ),
-    );
+    return new Observable((subscriber) => otelContext.with(activeContext, () => next.handle().pipe(
+      tap(() => {
+        this.logCompletion(method, path, response.statusCode, startedAt);
+        span.end();
+      }),
+      catchError((error: unknown) => {
+        const { statusCode, errorCode } = this.resolveErrorInfo(error);
+        this.logCompletion(method, path, statusCode, startedAt, errorCode);
+        span.end();
+        throw error;
+      }),
+    ).subscribe(subscriber)));
   }
 
   /** 요청 완료 1건을 `http_request` 이벤트로 기록한다. `errorCode`가 있으면 `level: 'error'`. */
@@ -84,18 +88,33 @@ export class LoggingInterceptor implements NestInterceptor {
   private resolveErrorInfo(error: unknown): { statusCode: number; errorCode: string } {
     if (error instanceof ApiException) {
       const body = error.getResponse() as ApiErrorBody;
-      return { statusCode: error.getStatus(), errorCode: body.code };
+      return {
+        statusCode: error.getStatus(),
+        errorCode: body.code,
+      };
     }
     if (error instanceof HttpException) {
       const status = error.getStatus();
       if (status === HttpStatus.BAD_REQUEST) {
-        return { statusCode: status, errorCode: 'VALIDATION_FAILED' };
+        return {
+          statusCode: status,
+          errorCode: 'VALIDATION_FAILED',
+        };
       }
       if (status === HttpStatus.NOT_FOUND) {
-        return { statusCode: status, errorCode: 'NOT_FOUND' };
+        return {
+          statusCode: status,
+          errorCode: 'NOT_FOUND',
+        };
       }
-      return { statusCode: status, errorCode: status >= 500 ? 'INTERNAL' : 'HTTP_ERROR' };
+      return {
+        statusCode: status,
+        errorCode: status >= 500 ? 'INTERNAL' : 'HTTP_ERROR',
+      };
     }
-    return { statusCode: HttpStatus.INTERNAL_SERVER_ERROR, errorCode: 'INTERNAL' };
+    return {
+      statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+      errorCode: 'INTERNAL',
+    };
   }
 }

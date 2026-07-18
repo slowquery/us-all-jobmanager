@@ -9,10 +9,9 @@ import { InMemoryLogger } from '../../application/testing/in-memory-logger';
 function makeControllableUseCase() {
   const resolvers: Array<() => void> = [];
   const execute = jest.fn(
-    () =>
-      new Promise<void>((resolve) => {
-        resolvers.push(() => resolve());
-      }),
+    () => new Promise<void>((resolve) => {
+      resolvers.push(() => resolve());
+    }),
   );
   const useCase = { execute } as unknown as ProcessPendingJobsUseCase;
   return {
@@ -28,7 +27,11 @@ function makeControllableUseCase() {
 describe('JobSchedulerAdapter', () => {
   it('tick()을 수동 호출하면 ProcessPendingJobsUseCase.execute를 위임 호출하고 시작/종료 이벤트를 남긴다', async () => {
     const logger = new InMemoryLogger();
-    const execute = jest.fn().mockResolvedValue({ batchSize: 0, succeeded: 0, failed: 0 });
+    const execute = jest.fn().mockResolvedValue({
+      batchSize: 0,
+      succeeded: 0,
+      failed: 0,
+    });
     const useCase = { execute } as unknown as ProcessPendingJobsUseCase;
     const adapter = new JobSchedulerAdapter(useCase, logger);
 
@@ -37,8 +40,14 @@ describe('JobSchedulerAdapter', () => {
     expect(execute).toHaveBeenCalledTimes(1);
     const tickEvents = logger.events.filter((event) => event.type === 'tick');
     expect(tickEvents).toHaveLength(2);
-    expect(tickEvents[0]).toMatchObject({ type: 'tick', phase: 'start' });
-    expect(tickEvents[1]).toMatchObject({ type: 'tick', phase: 'end' });
+    expect(tickEvents[0]).toMatchObject({
+      type: 'tick',
+      phase: 'start',
+    });
+    expect(tickEvents[1]).toMatchObject({
+      type: 'tick',
+      phase: 'end',
+    });
     expect(tickEvents[1]).toHaveProperty('durationMs');
     // 시작/종료 두 이벤트가 동일 tick을 가리키는 tickId를 공유해야 한다.
     expect(tickEvents[0]).toHaveProperty('tickId', (tickEvents[1] as { tickId: string }).tickId);
@@ -77,6 +86,9 @@ describe('JobSchedulerAdapter', () => {
     expect(skipEvents).toHaveLength(0);
 
     finishExecute();
-    await Promise.all([firstTick, secondTick]);
+    await Promise.all([
+      firstTick,
+      secondTick,
+    ]);
   });
 });

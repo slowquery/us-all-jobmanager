@@ -77,7 +77,10 @@ import { JsonDbJobRepository } from './infrastructure/persistence/json-db-job.re
     {
       provide: PatchJobUseCase,
       useFactory: (repository: JobRepository, logger: LoggerPort): PatchJobUseCase => new PatchJobUseCase(repository, logger),
-      inject: [JOB_REPOSITORY, LOGGER_PORT],
+      inject: [
+        JOB_REPOSITORY,
+        LOGGER_PORT,
+      ],
     },
     {
       provide: ProcessPendingJobsUseCase,
@@ -86,7 +89,11 @@ import { JsonDbJobRepository } from './infrastructure/persistence/json-db-job.re
         jobProcessor: JobProcessor,
         logger: LoggerPort,
       ): ProcessPendingJobsUseCase => new ProcessPendingJobsUseCase(repository, jobProcessor, logger),
-      inject: [JOB_REPOSITORY, JOB_PROCESSOR, LOGGER_PORT],
+      inject: [
+        JOB_REPOSITORY,
+        JOB_PROCESSOR,
+        LOGGER_PORT,
+      ],
     },
     {
       provide: JobSchedulerAdapter,
@@ -94,14 +101,26 @@ import { JsonDbJobRepository } from './infrastructure/persistence/json-db-job.re
         processPendingJobs: ProcessPendingJobsUseCase,
         logger: LoggerPort,
       ): JobSchedulerAdapter => new JobSchedulerAdapter(processPendingJobs, logger),
-      inject: [ProcessPendingJobsUseCase, LOGGER_PORT],
+      inject: [
+        ProcessPendingJobsUseCase,
+        LOGGER_PORT,
+      ],
     },
     {
       provide: APP_PIPE,
-      useValue: new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }),
+      useValue: new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+      }),
     },
-    { provide: APP_FILTER, useClass: HttpExceptionFilter },
-    { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
+    {
+      provide: APP_FILTER,
+      useClass: HttpExceptionFilter,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: LoggingInterceptor,
+    },
   ],
 })
 export class AppModule {}

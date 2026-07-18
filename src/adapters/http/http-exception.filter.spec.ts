@@ -1,4 +1,11 @@
-import { ArgumentsHost, BadRequestException, ForbiddenException, HttpException, HttpStatus, NotFoundException } from '@nestjs/common';
+import {
+  ArgumentsHost,
+  BadRequestException,
+  ForbiddenException,
+  HttpException,
+  HttpStatus,
+  NotFoundException,
+} from '@nestjs/common';
 import { InMemoryLogger } from '../../application/testing/in-memory-logger';
 import { ApiException } from './api.exception';
 import { HttpExceptionFilter } from './http-exception.filter';
@@ -6,10 +13,12 @@ import { HttpExceptionFilter } from './http-exception.filter';
 function makeHost(): { host: ArgumentsHost; status: jest.Mock; json: jest.Mock } {
   const json = jest.fn();
   const status = jest.fn().mockReturnValue({ json });
-  const host = {
-    switchToHttp: () => ({ getResponse: () => ({ status }) }),
-  } as unknown as ArgumentsHost;
-  return { host, status, json };
+  const host = { switchToHttp: () => ({ getResponse: () => ({ status }) }) } as unknown as ArgumentsHost;
+  return {
+    host,
+    status,
+    json,
+  };
 }
 
 describe('HttpExceptionFilter', () => {
@@ -17,13 +26,19 @@ describe('HttpExceptionFilter', () => {
     const filter = new HttpExceptionFilter(new InMemoryLogger());
     const { host, status, json } = makeHost();
 
-    filter.catch(new ApiException(HttpStatus.CONFLICT, 'INVALID_TRANSITION', '전이 불가', [{ field: 'status', reason: 'x' }]), host);
+    filter.catch(new ApiException(HttpStatus.CONFLICT, 'INVALID_TRANSITION', '전이 불가', [{
+      field: 'status',
+      reason: 'x',
+    }]), host);
 
     expect(status).toHaveBeenCalledWith(409);
     expect(json).toHaveBeenCalledWith({
       code: 'INVALID_TRANSITION',
       message: '전이 불가',
-      details: [{ field: 'status', reason: 'x' }],
+      details: [{
+        field: 'status',
+        reason: 'x',
+      }],
     });
   });
 
@@ -31,12 +46,18 @@ describe('HttpExceptionFilter', () => {
     const filter = new HttpExceptionFilter(new InMemoryLogger());
     const { host, status, json } = makeHost();
 
-    filter.catch(new BadRequestException(['title must be a string', 'title should not be empty']), host);
+    filter.catch(new BadRequestException([
+      'title must be a string',
+      'title should not be empty',
+    ]), host);
 
     expect(status).toHaveBeenCalledWith(400);
     const body = json.mock.calls[0][0];
     expect(body.code).toBe('VALIDATION_FAILED');
-    expect(body.details).toEqual([{ reason: 'title must be a string' }, { reason: 'title should not be empty' }]);
+    expect(body.details).toEqual([
+      { reason: 'title must be a string' },
+      { reason: 'title should not be empty' },
+    ]);
   });
 
   it('그 외 HttpException(404)은 상태 코드를 보존하며 NOT_FOUND로 매핑한다', () => {
@@ -93,7 +114,11 @@ describe('HttpExceptionFilter', () => {
     expect(body.code).toBe('INTERNAL');
     expect(body.message).not.toContain('/secret/path');
     expect(logger.events).toHaveLength(1);
-    expect(logger.events[0]).toMatchObject({ type: 'error', level: 'error', errorCode: 'INTERNAL' });
+    expect(logger.events[0]).toMatchObject({
+      type: 'error',
+      level: 'error',
+      errorCode: 'INTERNAL',
+    });
     expect((logger.events[0] as { message: string }).message).toContain('/secret/path');
   });
 });

@@ -28,7 +28,10 @@ describe('TracingJobProcessor', () => {
   it('위임한 JobProcessor의 process를 호출하고 결과를 그대로 반환한다', async () => {
     const delegate: JobProcessor = { process: jest.fn().mockResolvedValue({ outcome: 'completed' }) };
     const processor = new TracingJobProcessor(delegate);
-    const job = makeJob({ id: 'job-1', status: 'processing' });
+    const job = makeJob({
+      id: 'job-1',
+      status: 'processing',
+    });
 
     const outcome = await processor.process(job);
 
@@ -39,7 +42,10 @@ describe('TracingJobProcessor', () => {
   it('job 처리마다 scheduler.process-job 스팬을 열고 job.id/job.outcome 속성을 기록한 뒤 종료한다', async () => {
     const delegate: JobProcessor = { process: jest.fn().mockResolvedValue({ outcome: 'failed' }) };
     const processor = new TracingJobProcessor(delegate);
-    const job = makeJob({ id: 'job-42', status: 'processing' });
+    const job = makeJob({
+      id: 'job-42',
+      status: 'processing',
+    });
 
     await processor.process(job);
 
@@ -53,7 +59,10 @@ describe('TracingJobProcessor', () => {
   it('위임 처리가 예외를 던져도 스팬을 종료하고 예외를 그대로 전파한다', async () => {
     const delegate: JobProcessor = { process: jest.fn().mockRejectedValue(new Error('boom')) };
     const processor = new TracingJobProcessor(delegate);
-    const job = makeJob({ id: 'job-err', status: 'processing' });
+    const job = makeJob({
+      id: 'job-err',
+      status: 'processing',
+    });
 
     await expect(processor.process(job)).rejects.toThrow('boom');
 

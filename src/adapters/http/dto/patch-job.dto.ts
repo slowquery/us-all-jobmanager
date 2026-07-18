@@ -1,4 +1,9 @@
-import { IsIn, IsOptional, IsString, Length } from 'class-validator';
+import {
+  IsIn,
+  IsOptional,
+  IsString,
+  Length,
+} from 'class-validator';
 import { JobStatus } from '../../../domain/job';
 
 /**

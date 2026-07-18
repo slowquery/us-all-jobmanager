@@ -15,7 +15,10 @@ export const MAX_RETRY_COUNT = 3;
  */
 export const JOB_TRANSITIONS: Record<JobStatus, JobStatus[]> = {
   pending: ['processing'],
-  processing: ['completed', 'failed'],
+  processing: [
+    'completed',
+    'failed',
+  ],
   completed: [],
   failed: ['pending'],
 };

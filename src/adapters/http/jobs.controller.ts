@@ -1,4 +1,14 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { TransitionFailureReason } from '../../application/ports/job-repository.port';
 import { CreateJobUseCase } from '../../application/use-cases/create-job.use-case';
 import { GetJobsUseCase } from '../../application/use-cases/get-jobs.use-case';
@@ -33,7 +43,10 @@ function toTransitionFailureException(id: string, reason: TransitionFailureReaso
         HttpStatus.CONFLICT,
         'RETRY_LIMIT_EXCEEDED',
         '재시도 상한(3회)을 초과해 더 이상 재시도할 수 없습니다.',
-        [{ field: 'status', reason: 'retryCount가 상한에 도달했습니다.' }],
+        [{
+          field: 'status',
+          reason: 'retryCount가 상한에 도달했습니다.',
+        }],
       );
     case 'INVALID_TRANSITION':
     default:
@@ -41,7 +54,10 @@ function toTransitionFailureException(id: string, reason: TransitionFailureReaso
         HttpStatus.CONFLICT,
         'INVALID_TRANSITION',
         '현재 상태에서 허용되지 않는 전이입니다.',
-        [{ field: 'status', reason: '허용된 전이: failed → pending' }],
+        [{
+          field: 'status',
+          reason: '허용된 전이: failed → pending',
+        }],
       );
   }
 }
@@ -66,7 +82,10 @@ export class JobsController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreateJobDto): Promise<JobResponse> {
-    const job = await this.createJobUseCase.execute({ title: dto.title, description: dto.description ?? '' });
+    const job = await this.createJobUseCase.execute({
+      title: dto.title,
+      description: dto.description ?? '',
+    });
     return toJobResponse(job);
   }
 
@@ -74,7 +93,10 @@ export class JobsController {
   @Get()
   async list(): Promise<JobListResponse> {
     const jobs = await this.getJobsUseCase.execute();
-    return { items: jobs.map(toJobResponse), count: jobs.length };
+    return {
+      items: jobs.map(toJobResponse),
+      count: jobs.length,
+    };
   }
 
   /**
@@ -87,12 +109,19 @@ export class JobsController {
   @Get('search')
   async search(@Query() query: SearchQueryDto): Promise<JobListResponse> {
     if (query.title === undefined && query.status === undefined) {
-      throw new ApiException(HttpStatus.BAD_REQUEST, 'VALIDATION_FAILED', '검색 파라미터가 유효하지 않습니다.', [
-        { field: 'title|status', reason: 'title 또는 status 중 최소 1개는 필요합니다.' },
-      ]);
+      throw new ApiException(HttpStatus.BAD_REQUEST, 'VALIDATION_FAILED', '검색 파라미터가 유효하지 않습니다.', [{
+        field: 'title|status',
+        reason: 'title 또는 status 중 최소 1개는 필요합니다.',
+      }]);
     }
-    const jobs = await this.searchJobsUseCase.execute({ title: query.title, status: query.status });
-    return { items: jobs.map(toJobResponse), count: jobs.length };
+    const jobs = await this.searchJobsUseCase.execute({
+      title: query.title,
+      status: query.status,
+    });
+    return {
+      items: jobs.map(toJobResponse),
+      count: jobs.length,
+    };
   }
 
   /** `GET /jobs/:id` — 단건 조회(200, 미존재 시 404). */
@@ -113,9 +142,10 @@ export class JobsController {
   @Patch(':id')
   async patch(@Param('id') id: string, @Body() dto: PatchJobDto): Promise<JobResponse> {
     if (dto.title === undefined && dto.description === undefined && dto.status === undefined) {
-      throw new ApiException(HttpStatus.BAD_REQUEST, 'VALIDATION_FAILED', '요청이 유효하지 않습니다.', [
-        { field: 'title|description|status', reason: '최소 1개 필드가 필요합니다.' },
-      ]);
+      throw new ApiException(HttpStatus.BAD_REQUEST, 'VALIDATION_FAILED', '요청이 유효하지 않습니다.', [{
+        field: 'title|description|status',
+        reason: '최소 1개 필드가 필요합니다.',
+      }]);
     }
     const result = await this.patchJobUseCase.execute({
       id,

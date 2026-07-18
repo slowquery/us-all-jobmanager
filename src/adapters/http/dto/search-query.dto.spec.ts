@@ -9,7 +9,12 @@ describe('SearchQueryDto', () => {
     expect(errors).toHaveLength(0);
   });
 
-  it.each(['pending', 'processing', 'completed', 'failed'])('status:%s는 통과한다', async (status) => {
+  it.each([
+    'pending',
+    'processing',
+    'completed',
+    'failed',
+  ])('status:%s는 통과한다', async (status) => {
     const dto = plainToInstance(SearchQueryDto, { status });
     const errors = await validate(dto);
     expect(errors).toHaveLength(0);

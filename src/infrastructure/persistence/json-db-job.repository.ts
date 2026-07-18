@@ -159,7 +159,10 @@ export class JsonDbJobRepository implements JobRepository {
         createdAt: now,
         updatedAt: now,
       };
-      await this.db.push(JOBS_PATH, [...jobs, job], true);
+      await this.db.push(JOBS_PATH, [
+        ...jobs,
+        job,
+      ], true);
       return job;
     });
   }
@@ -180,7 +183,10 @@ export class JsonDbJobRepository implements JobRepository {
       const jobs = await this.db.getData(JOBS_PATH) as Job[];
       const index = jobs.findIndex((job) => job.id === id);
       if (index === -1) {
-        return { ok: false, reason: 'NOT_FOUND' };
+        return {
+          ok: false,
+          reason: 'NOT_FOUND',
+        };
       }
 
       const current = jobs[index];
@@ -188,7 +194,10 @@ export class JsonDbJobRepository implements JobRepository {
       if (!isFieldOnlyUpdate) {
         const error = transitionError(current, target);
         if (error) {
-          return { ok: false, reason: error };
+          return {
+            ok: false,
+            reason: error,
+          };
         }
       }
 
@@ -207,7 +216,10 @@ export class JsonDbJobRepository implements JobRepository {
       const nextJobs = [...jobs];
       nextJobs[index] = updated;
       await this.db.push(JOBS_PATH, nextJobs, true);
-      return { ok: true, job: updated };
+      return {
+        ok: true,
+        job: updated,
+      };
     }, id);
   }
 
@@ -220,7 +232,10 @@ export class JsonDbJobRepository implements JobRepository {
   async withBatch(ids: string[], target: JobStatus): Promise<BatchResult> {
     return this.enqueue(async () => {
       const jobs = await this.db.getData(JOBS_PATH) as Job[];
-      const byId = new Map(jobs.map((job) => [job.id, job] as const));
+      const byId = new Map(jobs.map((job) => [
+        job.id,
+        job,
+      ] as const));
       const committed: Job[] = [];
       const rejected: BatchRejection[] = [];
       const now = new Date().toISOString();
@@ -228,28 +243,42 @@ export class JsonDbJobRepository implements JobRepository {
       for (const id of ids) {
         const current = byId.get(id);
         if (!current) {
-          rejected.push({ id, reason: 'NOT_FOUND' });
+          rejected.push({
+            id,
+            reason: 'NOT_FOUND',
+          });
           continue;
         }
 
         const isFieldOnlyUpdate = target === current.status;
         const error = isFieldOnlyUpdate ? null : transitionError(current, target);
         if (error) {
-          rejected.push({ id, reason: error });
+          rejected.push({
+            id,
+            reason: error,
+          });
           continue;
         }
 
         const retryCount = current.status === 'failed' && target === 'pending'
           ? current.retryCount + 1
           : current.retryCount;
-        const updated: Job = { ...current, status: target, retryCount, updatedAt: now };
+        const updated: Job = {
+          ...current,
+          status: target,
+          retryCount,
+          updatedAt: now,
+        };
         byId.set(id, updated);
         committed.push(updated);
       }
 
       const nextJobs = jobs.map((job) => byId.get(job.id) as Job);
       await this.db.push(JOBS_PATH, nextJobs, true);
-      return { committed, rejected };
+      return {
+        committed,
+        rejected,
+      };
     });
   }
 }

@@ -2,7 +2,12 @@ import { IsIn, IsOptional, IsString } from 'class-validator';
 import { JobStatus } from '../../../domain/job';
 
 /** `GET /jobs/search`가 받는 4개 상태값 열거(도메인 `JobStatus`와 동일 집합). */
-const JOB_STATUS_VALUES: JobStatus[] = ['pending', 'processing', 'completed', 'failed'];
+const JOB_STATUS_VALUES: JobStatus[] = [
+  'pending',
+  'processing',
+  'completed',
+  'failed',
+];
 
 /**
  * `GET /jobs/search` 쿼리 파라미터 DTO. `title`(부분 일치)과 `status`(완전 일치) 모두 선택이나,

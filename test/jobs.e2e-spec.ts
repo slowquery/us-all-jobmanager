@@ -28,18 +28,31 @@ function makeSeedJob(overrides: Partial<Job>): Job {
   };
 }
 
-/** write stream은 비동기 flush이므로 로그 파일에 내용이 실제로 반영될 때까지 짧게 폴링한다. */
-async function waitForLogLines(path: string, minLines: number, timeoutMs = 2000): Promise<string[]> {
+/**
+ * 특정 조건을 만족하는 로그 이벤트가 파일에 나타날 때까지 폴링한다.
+ * 라인 수 기준 대기는 이벤트 도착 순서(lock/transition이 http_request보다 먼저 flush될 수 있음)에
+ * 취약하므로, 상관 검증처럼 특정 이벤트의 존재가 전제인 테스트는 이 predicate 대기를 사용한다.
+ *
+ * @param path - NDJSON 로그 파일 경로
+ * @param predicate - 파싱된 전체 이벤트 배열이 조건을 충족하는지 판정
+ * @returns 조건 충족 시점의 파싱된 이벤트 배열
+ */
+async function waitForLogEvents(
+  path: string,
+  predicate: (events: any[]) => boolean,
+  timeoutMs = 2000,
+): Promise<any[]> {
   const deadline = Date.now() + timeoutMs;
   for (;;) {
     if (existsSync(path)) {
       const lines = readFileSync(path, 'utf-8').trim().split('\n').filter((line) => line.length > 0);
-      if (lines.length >= minLines) {
-        return lines;
+      const events = lines.map((line) => JSON.parse(line));
+      if (predicate(events)) {
+        return events;
       }
     }
     if (Date.now() > deadline) {
-      throw new Error(`timed out waiting for ${minLines} log line(s) at ${path}`);
+      throw new Error(`timed out waiting for matching log events at ${path}`);
     }
     await new Promise((resolve) => setTimeout(resolve, 10));
   }
@@ -238,7 +251,6 @@ describe('Jobs API (e2e)', () => {
 
     it('재시도 전이 성공 시 같은 요청 내 http_request/transition 로그가 동일 traceId(32-hex)를 공유한다', async () => {
       const seeded = seededRetrySuccess;
-      const baselineLines = existsSync(logPath) ? readFileSync(logPath, 'utf-8').trim().split('\n').filter((line) => line.length > 0).length : 0;
 
       const response = await request(app.getHttpServer())
         .patch(`/jobs/${seeded.id}`)
@@ -246,8 +258,9 @@ describe('Jobs API (e2e)', () => {
         .expect(200);
       expect(response.body.status).toBe('pending');
 
-      const lines = await waitForLogLines(logPath, baselineLines + 2);
-      const events = lines.map((line) => JSON.parse(line));
+      const events = await waitForLogEvents(logPath, (parsed) => parsed.some(
+        (event) => event.method === 'PATCH' && event.path === `/jobs/${seeded.id}`,
+      ) && parsed.some((event) => event.jobId === seeded.id && event.actor === 'api'));
       const requestEvent = events.find(
         (event) => event.method === 'PATCH' && event.path === `/jobs/${seeded.id}`,
       );

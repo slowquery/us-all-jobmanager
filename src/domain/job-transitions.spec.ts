@@ -17,7 +17,12 @@ function makeJob(status: JobStatus, retryCount = 0): Job {
   };
 }
 
-const STATUSES: JobStatus[] = ['pending', 'processing', 'completed', 'failed'];
+const STATUSES: JobStatus[] = [
+  'pending',
+  'processing',
+  'completed',
+  'failed',
+];
 
 /** 09-final-design.md 전이 표(4x4 전 조합)의 기대 결과. failed→pending은 retryCount=0 기준. */
 const EXPECTED: Record<JobStatus, Record<JobStatus, 'ALLOW' | 'INVALID_TRANSITION'>> = {

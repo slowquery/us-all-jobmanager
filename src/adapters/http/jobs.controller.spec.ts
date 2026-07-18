@@ -20,16 +20,26 @@ function makeController(): { controller: JobsController; repository: InMemoryJob
     new GetJobUseCase(repository),
     new PatchJobUseCase(repository, logger),
   );
-  return { controller, repository };
+  return {
+    controller,
+    repository,
+  };
 }
 
 describe('JobsController', () => {
   it('POST: 생성된 job을 응답하며 retryCount는 노출하지 않는다', async () => {
     const { controller } = makeController();
 
-    const response = await controller.create({ title: 'Task', description: 'do' });
+    const response = await controller.create({
+      title: 'Task',
+      description: 'do',
+    });
 
-    expect(response).toMatchObject({ title: 'Task', description: 'do', status: 'pending' });
+    expect(response).toMatchObject({
+      title: 'Task',
+      description: 'do',
+      status: 'pending',
+    });
     expect((response as unknown as Record<string, unknown>).retryCount).toBeUndefined();
   });
 
@@ -55,8 +65,14 @@ describe('JobsController', () => {
 
   it('search: title만 있으면 부분 일치 검색을 수행한다', async () => {
     const { controller, repository } = makeController();
-    repository.seed(makeJob({ id: 'a', title: 'Deploy service' }));
-    repository.seed(makeJob({ id: 'b', title: 'Cleanup' }));
+    repository.seed(makeJob({
+      id: 'a',
+      title: 'Deploy service',
+    }));
+    repository.seed(makeJob({
+      id: 'b',
+      title: 'Cleanup',
+    }));
 
     const response = await controller.search({ title: 'deploy' });
 
@@ -72,7 +88,10 @@ describe('JobsController', () => {
 
   it('getById: 존재하면 200으로 job을 응답한다', async () => {
     const { controller, repository } = makeController();
-    repository.seed(makeJob({ id: 'a', title: 'found' }));
+    repository.seed(makeJob({
+      id: 'a',
+      title: 'found',
+    }));
 
     const response = await controller.getById('a');
 
@@ -84,14 +103,15 @@ describe('JobsController', () => {
     const { controller, repository } = makeController();
     repository.seed(makeJob({ id: 'a' }));
 
-    await expect(controller.patch('a', {})).rejects.toMatchObject({
-      response: expect.objectContaining({ code: 'VALIDATION_FAILED' }),
-    });
+    await expect(controller.patch('a', {})).rejects.toMatchObject({ response: expect.objectContaining({ code: 'VALIDATION_FAILED' }) });
   });
 
   it('patch: INVALID_TRANSITION은 409로 매핑된다', async () => {
     const { controller, repository } = makeController();
-    repository.seed(makeJob({ id: 'a', status: 'completed' }));
+    repository.seed(makeJob({
+      id: 'a',
+      status: 'completed',
+    }));
 
     await expect(controller.patch('a', { status: 'pending' })).rejects.toMatchObject({
       response: expect.objectContaining({ code: 'INVALID_TRANSITION' }),
@@ -101,7 +121,11 @@ describe('JobsController', () => {
 
   it('patch: RETRY_LIMIT_EXCEEDED는 409로 매핑된다', async () => {
     const { controller, repository } = makeController();
-    repository.seed(makeJob({ id: 'a', status: 'failed', retryCount: 3 }));
+    repository.seed(makeJob({
+      id: 'a',
+      status: 'failed',
+      retryCount: 3,
+    }));
 
     await expect(controller.patch('a', { status: 'pending' })).rejects.toMatchObject({
       response: expect.objectContaining({ code: 'RETRY_LIMIT_EXCEEDED' }),
@@ -111,7 +135,11 @@ describe('JobsController', () => {
 
   it('patch: 재시도 성공 시 갱신된 job을 응답한다', async () => {
     const { controller, repository } = makeController();
-    repository.seed(makeJob({ id: 'a', status: 'failed', retryCount: 0 }));
+    repository.seed(makeJob({
+      id: 'a',
+      status: 'failed',
+      retryCount: 0,
+    }));
 
     const response = await controller.patch('a', { status: 'pending' });
 

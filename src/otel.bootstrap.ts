@@ -47,7 +47,13 @@ export function initializeOtel(options: OtelBootstrapOptions = {}): NodeSDK | un
   try {
     // OTLP exporter가 백그라운드로 던지는 진단 로그(미도달 경고 등)가 프로세스를 흔들지
     // 않도록 diag 레벨을 ERROR로 낮춘다 — 앱 동작에는 무해하되 콘솔 노이즈만 줄인다.
-    diag.setLogger({ error: () => undefined, warn: () => undefined, info: () => undefined, debug: () => undefined, verbose: () => undefined }, DiagLogLevel.ERROR);
+    diag.setLogger({
+      error: () => undefined,
+      warn: () => undefined,
+      info: () => undefined,
+      debug: () => undefined,
+      verbose: () => undefined,
+    }, DiagLogLevel.ERROR);
 
     const traceExporter = options.traceExporter ?? new OTLPTraceExporter({ url: `${resolveOtlpEndpoint()}/v1/traces` });
 

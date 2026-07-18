@@ -4,7 +4,10 @@ import { CreateJobDto } from './create-job.dto';
 
 describe('CreateJobDto', () => {
   it('title/description이 유효하면 검증을 통과한다', async () => {
-    const dto = plainToInstance(CreateJobDto, { title: 'Task', description: 'Do something' });
+    const dto = plainToInstance(CreateJobDto, {
+      title: 'Task',
+      description: 'Do something',
+    });
     const errors = await validate(dto);
     expect(errors).toHaveLength(0);
   });

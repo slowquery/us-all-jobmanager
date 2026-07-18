@@ -6,7 +6,10 @@ describe('CreateJobUseCase', () => {
     const repository = new InMemoryJobRepository();
     const useCase = new CreateJobUseCase(repository);
 
-    const job = await useCase.execute({ title: 'Task 1', description: 'Do something' });
+    const job = await useCase.execute({
+      title: 'Task 1',
+      description: 'Do something',
+    });
 
     expect(job.title).toBe('Task 1');
     expect(job.description).toBe('Do something');

@@ -21,7 +21,11 @@ export interface ApiErrorBody {
  */
 export class ApiException extends HttpException {
   constructor(status: number, code: string, message: string, details?: ApiErrorDetail[]) {
-    const body: ApiErrorBody = { code, message, ...(details === undefined ? {} : { details }) };
+    const body: ApiErrorBody = {
+      code,
+      message,
+      ...(details === undefined ? {} : { details }),
+    };
     super(body, status);
   }
 }

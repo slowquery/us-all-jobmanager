@@ -51,7 +51,11 @@ export class ProcessPendingJobsUseCase {
     const candidates = await this.jobRepository.listByStatus('pending', SCHEDULER_BATCH_SIZE);
 
     if (candidates.length === 0) {
-      const result: ProcessPendingJobsResult = { batchSize: 0, succeeded: 0, failed: 0 };
+      const result: ProcessPendingJobsResult = {
+        batchSize: 0,
+        succeeded: 0,
+        failed: 0,
+      };
       this.logger.log({
         type: 'batch',
         level: 'info',
@@ -78,10 +82,8 @@ export class ProcessPendingJobsUseCase {
       }
     }
 
-    const completed: Job[] =
-      succeededIds.length > 0 ? (await this.jobRepository.withBatch(succeededIds, 'completed')).committed : [];
-    const failed: Job[] =
-      failedIds.length > 0 ? (await this.jobRepository.withBatch(failedIds, 'failed')).committed : [];
+    const completed: Job[] = succeededIds.length > 0 ? (await this.jobRepository.withBatch(succeededIds, 'completed')).committed : [];
+    const failed: Job[] = failedIds.length > 0 ? (await this.jobRepository.withBatch(failedIds, 'failed')).committed : [];
 
     this.emitTransitionEvents(completed, 'completed');
     this.emitTransitionEvents(failed, 'failed');

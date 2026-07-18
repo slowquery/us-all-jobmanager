@@ -19,6 +19,20 @@ export interface JobResponse {
  * @returns `retryCount`를 제외한 응답 리소스
  */
 export function toJobResponse(job: Job): JobResponse {
-  const { id, title, description, status, createdAt, updatedAt } = job;
-  return { id, title, description, status, createdAt, updatedAt };
+  const {
+    id,
+    title,
+    description,
+    status,
+    createdAt,
+    updatedAt,
+  } = job;
+  return {
+    id,
+    title,
+    description,
+    status,
+    createdAt,
+    updatedAt,
+  };
 }
