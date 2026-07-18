@@ -4,6 +4,7 @@ import {
   IsString,
   Length,
 } from 'class-validator';
+import { ApiHideProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { JobStatus } from '../../../domain/job';
 import { AtLeastOneField } from './validators/at-least-one-field.validator';
 
@@ -22,12 +23,22 @@ const JOB_STATUS_VALUES: JobStatus[] = [
  */
 export class SearchQueryDto {
   /** 제목 부분 일치 검색어(대소문자 무시, 1~200자). */
+  @ApiPropertyOptional({
+    description: '제목 부분 일치 검색어(대소문자 무시, 1~200자)',
+    example: '배포',
+    maxLength: 200,
+  })
   @IsOptional()
   @IsString()
   @Length(1, 200)
   title?: string;
 
   /** 상태 완전 일치 필터. */
+  @ApiPropertyOptional({
+    description: '상태 완전 일치 필터',
+    enum: JOB_STATUS_VALUES,
+    example: 'pending',
+  })
   @IsOptional()
   @IsIn(JOB_STATUS_VALUES)
   status?: JobStatus;
@@ -36,6 +47,7 @@ export class SearchQueryDto {
    * 클래스 레벨 "최소 1개 필드" 규칙을 담는 합성 프로퍼티(쿼리에는 존재하지 않는다).
    * `@IsOptional` 필드에 부착하면 값 부재 시 검증이 건너뛰어지므로 전용 프로퍼티에 부착한다.
    */
+  @ApiHideProperty()
   @AtLeastOneField([
     'title',
     'status',

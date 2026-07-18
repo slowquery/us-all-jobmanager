@@ -1,6 +1,6 @@
 {
   "name": "us-all-job-manager",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "NestJS based scheduler server",
   "main": "src/main.ts",
   "license": "UNLICENSED",
@@ -26,6 +26,7 @@
     "@nestjs/core": "^11.1.28",
     "@nestjs/platform-express": "^11.1.28",
     "@nestjs/schedule": "^6.1.3",
+    "@nestjs/swagger": "^11",
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/exporter-trace-otlp-http": "^0.220.0",
     "@opentelemetry/sdk-node": "^0.220.0",

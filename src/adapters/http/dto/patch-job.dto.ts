@@ -4,6 +4,7 @@ import {
   IsString,
   Length,
 } from 'class-validator';
+import { ApiHideProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { JobStatus } from '../../../domain/job';
 import { AtLeastOneField } from './validators/at-least-one-field.validator';
 
@@ -16,18 +17,34 @@ import { AtLeastOneField } from './validators/at-least-one-field.validator';
  */
 export class PatchJobDto {
   /** 갱신할 제목(선택, 1~200자). */
+  @ApiPropertyOptional({
+    description: '갱신할 제목(1~200자)',
+    example: '배포 파이프라인 실행(수정)',
+    minLength: 1,
+    maxLength: 200,
+  })
   @IsOptional()
   @IsString()
   @Length(1, 200)
   title?: string;
 
   /** 갱신할 설명(선택, 0~2000자). */
+  @ApiPropertyOptional({
+    description: '갱신할 설명(0~2000자)',
+    example: '재시도 후 재배포',
+    maxLength: 2000,
+  })
   @IsOptional()
   @IsString()
   @Length(0, 2000)
   description?: string;
 
   /** 재시도 전이 요청 값(선택). `'pending'` 외 다른 값은 DTO 검증 단계에서 거부된다. */
+  @ApiPropertyOptional({
+    description: "재시도 전이 값('pending'만 허용)",
+    enum: ['pending'],
+    example: 'pending',
+  })
   @IsOptional()
   @IsIn(['pending'])
   status?: Extract<JobStatus, 'pending'>;
@@ -37,6 +54,7 @@ export class PatchJobDto {
    * `@IsOptional`이 붙은 실제 필드에 부착하면 값 부재 시 검증이 통째로 건너뛰어지므로,
    * 다른 데코레이터가 없는 전용 프로퍼티에 부착한다({@link AtLeastOneField} 참조).
    */
+  @ApiHideProperty()
   @AtLeastOneField([
     'title',
     'description',

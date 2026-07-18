@@ -1,3 +1,4 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, Length } from 'class-validator';
 
 /**
@@ -7,11 +8,22 @@ import { IsOptional, IsString, Length } from 'class-validator';
  */
 export class CreateJobDto {
   /** 작업 제목(필수, 1~200자). */
+  @ApiProperty({
+    description: '작업 제목(1~200자)',
+    example: '배포 파이프라인 실행',
+    minLength: 1,
+    maxLength: 200,
+  })
   @IsString()
   @Length(1, 200)
   title!: string;
 
   /** 작업 설명(선택, 0~2000자). 미지정 시 빈 문자열로 취급한다. */
+  @ApiPropertyOptional({
+    description: '작업 설명(0~2000자)',
+    example: '스테이징 배포 후 스모크 테스트 수행',
+    maxLength: 2000,
+  })
   @IsOptional()
   @IsString()
   @Length(0, 2000)
