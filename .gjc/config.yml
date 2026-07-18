@@ -9,8 +9,8 @@ task:
   agentModelOverrides:
     # Planning agent (ralplan / planner) -> Anthropic Fable 5
     planner: anthropic/claude-fable-5
-    # Read-only architecture review -> Anthropic Opus 4.8
-    architect: anthropic/claude-opus-4-8
+    # Read-only architecture review -> Anthropic Fable 5
+    architect: anthropic/claude-fable-5
     # Read-only plan critique -> Anthropic Opus 4.8
     critic: anthropic/claude-opus-4-8
     # Code implementation -> Anthropic Sonnet 5
