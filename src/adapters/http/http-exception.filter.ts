@@ -9,7 +9,7 @@ import {
 import { Response } from 'express';
 import { LoggerPort } from '../../application/ports/logger.port';
 import { LOGGER_PORT } from '../tokens';
-import { ApiErrorBody, ApiException } from './api.exception';
+import { ApiErrorBody, ApiException, resolveErrorEnvelope } from './api.exception';
 
 /** {@link ApiErrorBody}에 응답으로 내려줄 HTTP 상태 코드를 더한 내부 결합 타입. */
 type ResolvedError = ApiErrorBody & { status: number };
@@ -50,26 +50,22 @@ export class HttpExceptionFilter implements ExceptionFilter<unknown> {
       };
     }
 
-    if (exception instanceof HttpException) {
-      const status = exception.getStatus();
-      if (status === HttpStatus.BAD_REQUEST) {
-        return this.resolveValidationFailure(exception);
-      }
-      if (status === HttpStatus.NOT_FOUND) {
-        return {
-          status,
-          code: 'NOT_FOUND',
-          message: exception.message,
-        };
-      }
-      return {
-        status,
-        code: status >= 500 ? 'INTERNAL' : 'HTTP_ERROR',
-        message: exception.message,
-      };
+    // 예기치 못한(HttpException 아님) 예외는 500 INTERNAL + 로그 전용(내부정보 비노출).
+    if (!(exception instanceof HttpException)) {
+      return this.resolveInternalError(exception);
     }
 
-    return this.resolveInternalError(exception);
+    // status/code 매핑은 공통 정본(resolveErrorEnvelope)에 위임하고, 필터는 code에 따라 응답
+    // message/details만 덧입힌다 — 인터셉터와 매핑이 구조적으로 항상 일치한다.
+    const { status, code } = resolveErrorEnvelope(exception);
+    if (code === 'VALIDATION_FAILED') {
+      return this.resolveValidationFailure(exception);
+    }
+    return {
+      status,
+      code,
+      message: exception.message,
+    };
   }
 
   /** `ValidationPipe`가 던지는 기본 400 응답(`message: string[]`)을 검증 실패 envelope으로 변환한다. */

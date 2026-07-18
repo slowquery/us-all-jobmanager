@@ -1,8 +1,6 @@
 import {
   CallHandler,
   ExecutionContext,
-  HttpException,
-  HttpStatus,
   Inject,
   Injectable,
   NestInterceptor,
@@ -13,7 +11,7 @@ import { Observable } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { LoggerPort } from '../../application/ports/logger.port';
 import { LOGGER_PORT } from '../tokens';
-import { ApiErrorBody, ApiException } from './api.exception';
+import { resolveErrorEnvelope } from './api.exception';
 
 /** HTTP 인바운드 스팬을 여는 OTel 트레이서 이름(06-observability-design.md adapter 계측 한정). */
 const HTTP_TRACER_NAME = 'us-all-job-manager-http';
@@ -83,38 +81,14 @@ export class LoggingInterceptor implements NestInterceptor {
   /**
    * `HttpExceptionFilter`가 최종적으로 매길 상태 코드/에러 코드를 인터셉터 시점에 선반영한다.
    * 필터는 인터셉터 바깥(응답 스트림 이후)에서 실행되므로 `response.statusCode`가 아직 반영되지
-   * 않은 상태 — 예외 타입으로부터 직접 추론한다(필터의 매핑 규칙과 반드시 동일하게 유지).
+   * 않은 상태 — 예외 타입으로부터 직접 추론한다. 매핑은 공통 정본 {@link resolveErrorEnvelope}에
+   * 위임하므로 필터와 항상 동일하다(수동 동기화 불필요).
    */
   private resolveErrorInfo(error: unknown): { statusCode: number; errorCode: string } {
-    if (error instanceof ApiException) {
-      const body = error.getResponse() as ApiErrorBody;
-      return {
-        statusCode: error.getStatus(),
-        errorCode: body.code,
-      };
-    }
-    if (error instanceof HttpException) {
-      const status = error.getStatus();
-      if (status === HttpStatus.BAD_REQUEST) {
-        return {
-          statusCode: status,
-          errorCode: 'VALIDATION_FAILED',
-        };
-      }
-      if (status === HttpStatus.NOT_FOUND) {
-        return {
-          statusCode: status,
-          errorCode: 'NOT_FOUND',
-        };
-      }
-      return {
-        statusCode: status,
-        errorCode: status >= 500 ? 'INTERNAL' : 'HTTP_ERROR',
-      };
-    }
+    const { status, code } = resolveErrorEnvelope(error);
     return {
-      statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-      errorCode: 'INTERNAL',
+      statusCode: status,
+      errorCode: code,
     };
   }
 }

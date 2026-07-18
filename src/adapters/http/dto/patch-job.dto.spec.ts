@@ -3,8 +3,14 @@ import { validate } from 'class-validator';
 import { PatchJobDto } from './patch-job.dto';
 
 describe('PatchJobDto', () => {
-  it('세 필드 모두 선택이므로 빈 객체도 통과한다(최소 1개 필드 검증은 컨트롤러 책임)', async () => {
+  it('빈 객체는 AtLeastOneField 검증에 실패한다(최소 1개 필드 필요)', async () => {
     const dto = plainToInstance(PatchJobDto, {});
+    const errors = await validate(dto);
+    expect(errors.some((error) => error.constraints?.atLeastOneField !== undefined)).toBe(true);
+  });
+
+  it('title 하나만 있어도 통과한다', async () => {
+    const dto = plainToInstance(PatchJobDto, { title: 'x' });
     const errors = await validate(dto);
     expect(errors).toHaveLength(0);
   });

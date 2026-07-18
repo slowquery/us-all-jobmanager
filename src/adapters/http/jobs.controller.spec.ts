@@ -54,15 +54,6 @@ describe('JobsController', () => {
     expect(response.items).toHaveLength(2);
   });
 
-  it('search: title/status 둘 다 없으면 400 VALIDATION_FAILED ApiException을 던진다', async () => {
-    const { controller } = makeController();
-
-    await expect(controller.search({})).rejects.toMatchObject({
-      response: expect.objectContaining({ code: 'VALIDATION_FAILED' }),
-      status: HttpStatus.BAD_REQUEST,
-    });
-  });
-
   it('search: title만 있으면 부분 일치 검색을 수행한다', async () => {
     const { controller, repository } = makeController();
     repository.seed(makeJob({
@@ -97,13 +88,6 @@ describe('JobsController', () => {
 
     expect(response.id).toBe('a');
     expect(response.title).toBe('found');
-  });
-
-  it('patch: 필드가 하나도 없으면 400 VALIDATION_FAILED ApiException을 던진다', async () => {
-    const { controller, repository } = makeController();
-    repository.seed(makeJob({ id: 'a' }));
-
-    await expect(controller.patch('a', {})).rejects.toMatchObject({ response: expect.objectContaining({ code: 'VALIDATION_FAILED' }) });
   });
 
   it('patch: INVALID_TRANSITION은 409로 매핑된다', async () => {

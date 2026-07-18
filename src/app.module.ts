@@ -111,6 +111,8 @@ import { JsonDbJobRepository } from './infrastructure/persistence/json-db-job.re
       useValue: new ValidationPipe({
         whitelist: true,
         forbidNonWhitelisted: true,
+        transform: true,
+        transformOptions: { enableImplicitConversion: false },
       }),
     },
     {

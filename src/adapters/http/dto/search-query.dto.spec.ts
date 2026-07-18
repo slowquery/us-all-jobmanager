@@ -9,6 +9,18 @@ describe('SearchQueryDto', () => {
     expect(errors).toHaveLength(0);
   });
 
+  it('빈 객체는 AtLeastOneField 검증에 실패한다(title/status 최소 1개)', async () => {
+    const dto = plainToInstance(SearchQueryDto, {});
+    const errors = await validate(dto);
+    expect(errors.some((error) => error.constraints?.atLeastOneField !== undefined)).toBe(true);
+  });
+
+  it('title이 200자를 초과하면 검증에 실패한다', async () => {
+    const dto = plainToInstance(SearchQueryDto, { title: 'x'.repeat(201) });
+    const errors = await validate(dto);
+    expect(errors.some((error) => error.property === 'title')).toBe(true);
+  });
+
   it.each([
     'pending',
     'processing',

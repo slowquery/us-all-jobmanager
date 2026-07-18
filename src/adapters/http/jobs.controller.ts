@@ -101,19 +101,14 @@ export class JobsController {
 
   /**
    * `GET /jobs/search` — 제목 부분 일치/상태 완전 일치 검색(200). `title`/`status` 둘 다 없으면
-   * `GET /jobs`와 책임이 겹치므로 400으로 거부한다(04-api-layer-design.md 검색 쿼리 파라미터 설계).
+   * `GET /jobs`와 책임이 겹치므로 400 `VALIDATION_FAILED`로 거부한다 — 이 규칙은 {@link SearchQueryDto}의
+   * {@link AtLeastOneField} 검증이 ValidationPipe 단계에서 처리한다(컨트롤러 분기 제거, 04-api-layer-design.md 검색 쿼리 파라미터 설계).
    *
    * NestJS 라우팅은 등록 순서로 매칭하므로, `:id`보다 먼저 선언해 `/jobs/search`가 `:id` 파라미터로
    * 오인되지 않게 한다.
    */
   @Get('search')
   async search(@Query() query: SearchQueryDto): Promise<JobListResponse> {
-    if (query.title === undefined && query.status === undefined) {
-      throw new ApiException(HttpStatus.BAD_REQUEST, 'VALIDATION_FAILED', '검색 파라미터가 유효하지 않습니다.', [{
-        field: 'title|status',
-        reason: 'title 또는 status 중 최소 1개는 필요합니다.',
-      }]);
-    }
     const jobs = await this.searchJobsUseCase.execute({
       title: query.title,
       status: query.status,
@@ -141,12 +136,6 @@ export class JobsController {
    */
   @Patch(':id')
   async patch(@Param('id') id: string, @Body() dto: PatchJobDto): Promise<JobResponse> {
-    if (dto.title === undefined && dto.description === undefined && dto.status === undefined) {
-      throw new ApiException(HttpStatus.BAD_REQUEST, 'VALIDATION_FAILED', '요청이 유효하지 않습니다.', [{
-        field: 'title|description|status',
-        reason: '최소 1개 필드가 필요합니다.',
-      }]);
-    }
     const result = await this.patchJobUseCase.execute({
       id,
       title: dto.title,
