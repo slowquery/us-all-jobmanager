@@ -3,7 +3,7 @@
 ## 요약
 - 머지는 사용자 명시 승인 후 **squash 전용**.
 - **PR 제목**과 **커밋 메시지 내용**은 **한글**로 작성(Conventional 타입 프리픽스만 영문).
-- Conventional Commits + `package.json` SemVer 동기화.
+- Conventional Commits + `package.json` SemVer 동기화. **소스/기능 변경 PR은 `package.json` version을 base보다 반드시 상향**(CI `verify`의 `SemVer bump 게이트`가 하드 강제).
 - 모든 PR 생성/수정 시 `scripts/export-session.sh <session-name>`로 export한 `HISTORY/<KST-session-date>/<session-name>/session.html`을 **커밋 포함**(고정 경로=덮어쓰기).
 
 ## 테스트 게이트 (머지 전제)

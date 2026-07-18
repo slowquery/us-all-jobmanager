@@ -2,14 +2,14 @@
 set -euo pipefail
 branch="$(git symbolic-ref --short HEAD 2>/dev/null || echo DETACHED)"
 if [ "$branch" = "master" ]; then
-  echo "governance/pre-commit: direct commits to 'master' are refused. Use a feature branch + squash PR (Rule 7)." >&2
+  echo "governance/pre-commit: 'master'에 직접 커밋은 거부됩니다. 피처 브랜치 + squash PR을 사용하세요 (Rule 7)." >&2
   exit 1
 fi
 # Worktree guard: ALL commits must come from a task worktree, never the main checkout (Rule 1).
 # Main checkout: git-dir == git-common-dir. Linked worktree: they differ.
 if [ "$(git rev-parse --git-dir)" = "$(git rev-parse --git-common-dir)" ]; then
-  echo "governance/pre-commit: commits from the main checkout are refused — every task (src/docs/logs alike) runs in a dedicated worktree (Rule 1)." >&2
-  echo "  fix: git worktree add ../UsAllJobManager.worktrees/\$(TZ=Asia/Seoul date +%Y%m%d)-<session-name> -b <type>/<slug>" >&2
+  echo "governance/pre-commit: 메인 체크아웃에서의 커밋은 거부됩니다 — 모든 작업(src/docs/logs)은 전용 워크트리에서 수행합니다 (Rule 1)." >&2
+  echo "  해결: git worktree add ../UsAllJobManager.worktrees/\$(TZ=Asia/Seoul date +%Y%m%d)-<session-name> -b <type>/<slug>" >&2
   exit 1
 fi
 exit 0

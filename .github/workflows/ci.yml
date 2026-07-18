@@ -12,11 +12,52 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
       - run: corepack enable
       - run: yarn install --immutable
+      - name: SemVer bump 게이트
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          node <<'EOF'
+          const { execSync } = require('child_process');
+          const base = process.env.BASE_REF;
+          const head = require('./package.json').version;
+          function parse(v) {
+            const m = /^(\d+)\.(\d+)\.(\d+)$/.exec((v || '').trim());
+            if (!m) return null;
+            return [Number(m[1]), Number(m[2]), Number(m[3])];
+          }
+          let baseVersion;
+          try {
+            const json = execSync(`git show origin/${base}:package.json`, { encoding: 'utf8' });
+            baseVersion = JSON.parse(json).version;
+          } catch (e) {
+            console.log(`::warning::base(origin/${base})에서 package.json version을 읽지 못했습니다 — 게이트를 건너뜁니다.`);
+            process.exit(0);
+          }
+          const b = parse(baseVersion);
+          const h = parse(head);
+          if (!h) {
+            console.log(`::error::head package.json version '${head}'이 유효한 SemVer(X.Y.Z)가 아닙니다 (Rule 7).`);
+            process.exit(1);
+          }
+          if (!b) {
+            console.log(`::warning::base version '${baseVersion}' 파싱 실패 — 비교를 건너뜁니다.`);
+            process.exit(0);
+          }
+          const bumped = (h[0] > b[0]) || (h[0] === b[0] && h[1] > b[1]) || (h[0] === b[0] && h[1] === b[1] && h[2] > b[2]);
+          if (!bumped) {
+            console.log(`::error::package.json version이 base(${baseVersion})보다 상향되지 않았습니다 (head=${head}). 변경 시 SemVer를 반드시 올리세요 (Rule 7).`);
+            process.exit(1);
+          }
+          console.log(`SemVer bump 확인: ${baseVersion} -> ${head}`);
+          EOF
       - name: Lint
         run: yarn lint
       - name: Build

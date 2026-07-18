@@ -3,7 +3,7 @@ set -euo pipefail
 # stdin lines: <local ref> <local sha> <remote ref> <remote sha>
 while read -r localref localsha remoteref remotesha; do
   if [ "$remoteref" = "refs/heads/master" ]; then
-    echo "governance/pre-push: pushing to 'master' is refused (hard backstop, incl. ff-merge/rebase). Open a squash PR on GitHub (Rule 7)." >&2
+    echo "governance/pre-push: 'master'로의 푸시는 거부됩니다 (ff-merge/rebase 포함 하드 백스톱). GitHub에서 squash PR을 여세요 (Rule 7)." >&2
     exit 1
   fi
 done

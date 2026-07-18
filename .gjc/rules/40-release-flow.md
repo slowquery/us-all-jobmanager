@@ -21,13 +21,14 @@ alwaysApply: true
 - 머지 전 CI(`verify`: install→lint→build→unit→e2e)가 **통과**해야 한다. 테스트가 존재하면 반드시 통과(하드)해야 하며, 실패하면 **머지 금지** — 원인을 분석해 사용자에게 재확인한다. unit/e2e 테스트가 구현되면 GitHub branch protection의 required status check(`verify`)로 하드 강제한다. 사용자가 머지를 수락했더라도 테스트 실패 시 머지하지 않는다.
 - Squash/commit subject = Conventional Commits: `feat|fix|chore|docs|style|refactor|test`; bump
   SemVer synced to `package.json` `version`.
+- **SemVer bump 하드 강제**: 소스/기능 변경이 포함된 PR은 `package.json` `version`을 base(`master`)보다 반드시 상향해야 한다. CI `verify`의 `SemVer bump 게이트` 스텝이 base 대비 상향 여부를 검사해 미상향 시 실패시킨다(하드). 커밋 메시지의 `version: X.Y.Z` 트레일러는 `package.json`과 바이트 일치해야 하며 `commit-msg` 훅이 검사한다(트레일러가 있을 때). 즉 **CI 게이트(bump 강제) + commit-msg 훅(일치 강제)** 이중 방어.
 - On every PR create/edit, run `/export HISTORY/<KST-date>-<session-name>/session.html` from the
   interactive top-level session (fixed path ⇒ overwrite; no proliferating copies).
 
 ## Canonical gated-command table (single source; referenced, not duplicated)
 | Command | Treatment | Layer |
 |---|---|---|
-| `git commit` on feature branch (in worktree) | allowed; msg shape + SemVer validated | `.githooks/commit-msg` (hard) |
+| `git commit` on feature branch (in worktree) | allowed; msg shape(한글 subject) + version 트레일러 일치 검사 | `.githooks/commit-msg` (hard) |
 | `git commit` on `master` OR `src/**` from main checkout | refused | `.githooks/pre-commit` (hard) |
 | `git merge` (merge commit) on `master` | refused | `.githooks/pre-merge-commit` (hard) |
 | `git merge --ff` / `git rebase` onto `master` | bypass commit hooks locally; backstop = pre-push refusing `refs/heads/master`; local divergence recoverable via `git reset --hard origin/master` | `.githooks/pre-push` (hard at push) |
@@ -37,6 +38,8 @@ alwaysApply: true
 | `gh api`, `gh pr merge`, `git apply/reset/checkout/clean/push` | refused for reviewer agents | agent frontmatter (hard for reviewers) |
 | `gh pr merge --squash` | only after explicit user approval; refused for reviewers | GitHub squash-only (hard shape) + approval (advisory) |
 | `gh pr merge --merge` / `--rebase` | refused server-side | GitHub squash-only (hard) |
+| PR head `package.json` version ≤ base(`master`) | refused | CI `verify` `SemVer bump 게이트` (hard) |
+| 거버넌스 스크립트/훅·CI의 사용자 노출 출력 문구 | 한글 필수 | 리뷰(advisory) + Rule 9 |
 
 Honest note: local prompts cannot stop a human clicking merge in the web UI; only the GitHub
 squash-only setting + branch protection on `master` constrain the UI.
