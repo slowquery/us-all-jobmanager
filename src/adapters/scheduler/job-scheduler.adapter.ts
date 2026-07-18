@@ -1,8 +1,12 @@
 import { randomUUID } from 'crypto';
 import { Injectable } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
+import { trace } from '@opentelemetry/api';
 import { ProcessPendingJobsUseCase } from '../../application/use-cases/process-pending-jobs.use-case';
 import { LoggerPort } from '../../application/ports/logger.port';
+
+/** tick 루트 스팬을 여는 OTel 트레이서 이름(06-observability-design.md adapter 계측 한정). */
+const SCHEDULER_TRACER_NAME = 'us-all-job-manager-scheduler';
 
 /** `@Interval` tick 주기(ms). 09-final-design.md 확정 #7: 60초. */
 export const SCHEDULER_TICK_MS = 60_000;
@@ -25,6 +29,14 @@ export const SCHEDULER_TICK_MS = 60_000;
  * 이는 08 C-4(tick 중복 재현) 테스트 전용 주입점이며, 실 프로덕션 경로의 무결성 계약(02
  * guard-in-lock)과는 무관하다(가드를 꺼도 개별 job 전이는 여전히 02의 atomic read→guard→write를
  * 통과하므로 데이터가 깨지지는 않는다 — 다만 중복 선점 시도로 인한 큐 대기 낭비가 재현된다).
+ *
+ * ### 트레이싱 (tick 루트 스팬)
+ * 스킵되지 않고 실제로 처리를 진행하는 tick마다 `scheduler.tick` 루트 스팬을 연다
+ * (06-observability-design.md 트레이싱 설계, 09-final-design.md 확정 #12). job별 자식 스팬은 이
+ * 클래스가 직접 열지 않는다 — `ProcessPendingJobsUseCase`에 주입되는 `JobProcessor`를 감싸는
+ * `TracingJobProcessor`(adapter 계층 데코레이터, DI 배선은 `app.module.ts`)가 담당하며, OTel
+ * context API가 `startActiveSpan`의 활성 컨텍스트를 통해 부모-자식 관계를 암묵적으로 연결한다
+ * (도메인/유스케이스 무침투 — application/domain에 `@opentelemetry/*` import 금지).
  */
 @Injectable()
 export class JobSchedulerAdapter {
@@ -78,19 +90,26 @@ export class JobSchedulerAdapter {
       phase: 'start',
     });
 
-    try {
-      await this.processPendingJobs.execute();
-      this.logger.log({
-        type: 'tick',
-        level: 'info',
-        source: 'scheduler',
-        message: 'tick ended',
-        tickId,
-        phase: 'end',
-        durationMs: Date.now() - startedAt,
-      });
-    } finally {
-      this.isTickRunning = false;
-    }
+    await trace.getTracer(SCHEDULER_TRACER_NAME).startActiveSpan(
+      'scheduler.tick',
+      { attributes: { 'tick.id': tickId } },
+      async (span) => {
+        try {
+          await this.processPendingJobs.execute();
+          this.logger.log({
+            type: 'tick',
+            level: 'info',
+            source: 'scheduler',
+            message: 'tick ended',
+            tickId,
+            phase: 'end',
+            durationMs: Date.now() - startedAt,
+          });
+        } finally {
+          span.end();
+          this.isTickRunning = false;
+        }
+      },
+    );
   }
 }
