@@ -20,8 +20,8 @@ Job 처리기(백그라운드 스케줄러)의 흐름도. 정본 설계 문서: 
   adapter/application 분리 — 08의 "수동 tick 트리거" 결정론적 테스트 전략의 전제 조건).
 - `@nestjs/schedule`이 자동으로 호출하는 것과 별개로, `tick()`은 인자 없는 공개 메서드이므로 테스트나
   운영 도구가 수동으로도 직접 호출할 수 있다(fake timer 없이 결정론적 검증, 08 확정).
-- 모듈(`app.module.ts`) 등록은 이 세션(S5)의 책임이 아니다 — S6가 `JobSchedulerAdapter`를
-  `AppModule`의 provider로 등록한다.
+- 모듈 등록은 이 세션(S5)의 책임이 아니다 — `JobSchedulerAdapter`/`ProcessPendingJobsUseCase`는
+  전용 `scheduler.module.ts`(`SchedulerModule`)가 배선하고, `AppModule`이 이를 import한다.
 
 ## 2. 함수 흐름
 
