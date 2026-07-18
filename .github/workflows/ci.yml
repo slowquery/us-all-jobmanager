@@ -4,31 +4,187 @@ on:
     branches: [master]
   push:
     branches: [master]
+permissions:
+  contents: read
+  pull-requests: write
 jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
       - run: corepack enable
       - run: yarn install --immutable
+      - name: SemVer bump 게이트
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          node <<'EOF'
+          const { execSync } = require('child_process');
+          const base = process.env.BASE_REF;
+          const head = require('./package.json').version;
+          function parse(v) {
+            const m = /^(\d+)\.(\d+)\.(\d+)$/.exec((v || '').trim());
+            if (!m) return null;
+            return [Number(m[1]), Number(m[2]), Number(m[3])];
+          }
+          let baseVersion;
+          try {
+            const json = execSync(`git show origin/${base}:package.json`, { encoding: 'utf8' });
+            baseVersion = JSON.parse(json).version;
+          } catch (e) {
+            console.log(`::warning::base(origin/${base})에서 package.json version을 읽지 못했습니다 — 게이트를 건너뜁니다.`);
+            process.exit(0);
+          }
+          const b = parse(baseVersion);
+          const h = parse(head);
+          if (!h) {
+            console.log(`::error::head package.json version '${head}'이 유효한 SemVer(X.Y.Z)가 아닙니다 (Rule 7).`);
+            process.exit(1);
+          }
+          if (!b) {
+            console.log(`::warning::base version '${baseVersion}' 파싱 실패 — 비교를 건너뜁니다.`);
+            process.exit(0);
+          }
+          const bumped = (h[0] > b[0]) || (h[0] === b[0] && h[1] > b[1]) || (h[0] === b[0] && h[1] === b[1] && h[2] > b[2]);
+          if (!bumped) {
+            console.log(`::error::package.json version이 base(${baseVersion})보다 상향되지 않았습니다 (head=${head}). 변경 시 SemVer를 반드시 올리세요 (Rule 7).`);
+            process.exit(1);
+          }
+          console.log(`SemVer bump 확인: ${baseVersion} -> ${head}`);
+          EOF
+      - name: 결정 로그 한글 게이트
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          node <<'EOF'
+          const { execSync } = require('child_process');
+          const fs = require('fs');
+          const base = process.env.BASE_REF;
+          // PR에서 추가(A)/수정(M)된 logs/**/*.md 목록(TEMPLATE.md 제외). 기존 영문 로그는 소급하지 않는다.
+          let files = [];
+          try {
+            const out = execSync(`git diff --name-only --diff-filter=AM origin/${base}...HEAD -- 'logs/**/*.md' 'logs/*.md'`, { encoding: 'utf8' });
+            files = out.split('\n').map((f) => f.trim()).filter(Boolean).filter((f) => !f.endsWith('/TEMPLATE.md') && f !== 'logs/TEMPLATE.md');
+          } catch (e) {
+            console.log(`::warning::base(origin/${base}) diff를 읽지 못했습니다 — 결정 로그 한글 게이트를 건너뜁니다.`);
+            process.exit(0);
+          }
+          const hangul = /[\uAC00-\uD7A3]/;
+          const offenders = [];
+          for (const file of files) {
+            if (!fs.existsSync(file)) continue;
+            const text = fs.readFileSync(file, 'utf8');
+            if (!hangul.test(text)) offenders.push(file);
+          }
+          if (offenders.length > 0) {
+            for (const file of offenders) {
+              console.log(`::error file=${file}::결정 로그는 한글로 작성해야 합니다 — 한글이 전혀 없습니다 (Rule 4/Rule 9).`);
+            }
+            console.log(`::error::결정 로그 한글 게이트 실패: ${offenders.length}개 파일에 한글이 없습니다.`);
+            process.exit(1);
+          }
+          console.log(`결정 로그 한글 게이트 확인: 검사 대상 ${files.length}개 모두 한글 포함.`);
+          EOF
       - name: Lint
         run: yarn lint
       - name: Build
         run: yarn build
       - name: Unit tests
+        id: unit_tests
+        if: always()
         run: |
-          if node -e "p=require('./package.json');process.exit(p.scripts&&p.scripts.test?0:1)"; then
-            yarn test
+          if node -e "p=require('./package.json');process.exit(p.scripts&&p.scripts['test:cov']?0:1)"; then
+            yarn test:cov --coverageReporters=json-summary --coverageReporters=text
           else
-            echo "::warning::'test' 스크립트 미정의 — unit 테스트 미구현(구현 시 필수)"
+            echo "::warning::'test:cov' 스크립트 미정의 — unit 테스트 미구현(구현 시 필수)"
           fi
       - name: E2E tests
+        id: e2e_tests
+        if: always()
         run: |
           if node -e "p=require('./package.json');process.exit(p.scripts&&p.scripts['test:e2e']?0:1)"; then
             yarn test:e2e
           else
             echo "::warning::'test:e2e' 스크립트 미정의 — e2e 테스트 미구현(구현 시 필수)"
           fi
+      - name: Collect test & coverage results
+        id: report
+        if: always()
+        env:
+          UNIT_OUTCOME: ${{ steps.unit_tests.outcome }}
+          E2E_OUTCOME: ${{ steps.e2e_tests.outcome }}
+        run: |
+          node <<'EOF'
+          const fs = require('fs');
+
+          const results = [
+            { name: 'Unit tests', outcome: process.env.UNIT_OUTCOME },
+            { name: 'E2E tests', outcome: process.env.E2E_OUTCOME },
+          ];
+          const passCount = results.filter((r) => r.outcome === 'success').length;
+          const failCount = results.length - passCount;
+
+          let coverageTable = '| Metric | Covered/Total | % |\n| --- | --- | --- |\n';
+          const summaryPath = 'coverage/coverage-summary.json';
+          if (fs.existsSync(summaryPath)) {
+            const summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
+            const total = summary.total || {};
+            for (const key of ['statements', 'branches', 'functions', 'lines']) {
+              const m = total[key];
+              if (m) {
+                coverageTable += `| ${key} | ${m.covered}/${m.total} | ${m.pct}% |\n`;
+              }
+            }
+          } else {
+            coverageTable += '| (coverage-summary.json 없음) | - | - |\n';
+          }
+
+          let testTable = '| Step | Result |\n| --- | --- |\n';
+          for (const r of results) {
+            const icon = r.outcome === 'success' ? '✅ success' : r.outcome === 'skipped' ? '⏭️ skipped' : `❌ ${r.outcome}`;
+            testTable += `| ${r.name} | ${icon} |\n`;
+          }
+
+          const body = [
+            '### CI 테스트 · 커버리지 결과',
+            '',
+            `**Pass:** ${passCount} / **Fail:** ${failCount}`,
+            '',
+            testTable,
+            coverageTable,
+          ].join('\n');
+
+          const out = process.env.GITHUB_OUTPUT;
+          const delimiter = 'REPORT_EOF';
+          fs.appendFileSync(out, `body<<${delimiter}\n${body}\n${delimiter}\n`);
+          fs.appendFileSync(out, `fail_count=${failCount}\n`);
+          EOF
+      - name: Write step summary
+        if: always()
+        env:
+          REPORT_BODY: ${{ steps.report.outputs.body }}
+        run: |
+          printf '%s\n' "$REPORT_BODY" >> "$GITHUB_STEP_SUMMARY"
+      - name: Sticky PR comment
+        if: always() && github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@773744901bac0e8cbb5a0dc842800d45e9b2b405 # v2.9.4
+        with:
+          message: ${{ steps.report.outputs.body }}
+      - name: Reflect test outcome in job status
+        if: always()
+        env:
+          UNIT_OUTCOME: ${{ steps.unit_tests.outcome }}
+          E2E_OUTCOME: ${{ steps.e2e_tests.outcome }}
+        run: |
+          if [ "$UNIT_OUTCOME" != "success" ] || [ "$E2E_OUTCOME" != "success" ]; then
+            echo "::error::테스트 실패 — unit=$UNIT_OUTCOME e2e=$E2E_OUTCOME"
+            exit 1
+          fi
+          exit 0

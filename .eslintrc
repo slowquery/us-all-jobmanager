@@ -3,6 +3,20 @@
     "node": true,
     "es2022": true
   },
+  "overrides": [
+    {
+      "files": [
+        "**/*.spec.ts",
+        "test/**/*.ts"
+      ],
+      "env": {
+        "jest": true
+      },
+      "rules": {
+        "no-promise-executor-return": "off"
+      }
+    }
+  ],
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",

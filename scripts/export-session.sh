@@ -2,17 +2,19 @@
 # Export a GJC session to HISTORY/<KST-session-date>/<session-name>/session.html.
 # Agent- and user-runnable alternative to the interactive /export slash command (Rule 7).
 #
-# Usage: scripts/export-session.sh <session-name> [session-id]
+# Usage: scripts/export-session.sh <session-name> [session-id] [out-filename]
 #   <session-name>  kebab task-slug (e.g. project-governance)
 #   [session-id]    defaults to $GJC_SESSION_ID
+#   [out-filename]  출력 파일명, 기본값 session.html (예: session2.html 로 동일 세션 별도 스냅샷)
 # Overrides: GJC_SESSION_FILE=<path .jsonl>, GJC_SESSION_DATE=<YYYYMMDD>.
 #
 # The KST date is derived from the SESSION START time (JSONL timestamp), NOT "now",
 # so the output path is stable across re-exports and re-exports overwrite in place.
 set -euo pipefail
 
-name="${1:?usage: scripts/export-session.sh <session-name> [session-id]}"
+name="${1:?사용법: scripts/export-session.sh <session-name> [session-id] [out-filename]}"
 sid="${2:-${GJC_SESSION_ID:-}}"
+out_name="${3:-session.html}"
 repo_root="$(git rev-parse --show-toplevel)"
 
 # Resolve the session JSONL.
@@ -24,7 +26,7 @@ if [ -z "$jsonl" ]; then
   jsonl="$(ls -1t "$HOME"/.gjc/shared-sessions/*/*.jsonl 2>/dev/null | head -1 || true)"
 fi
 if [ -z "$jsonl" ] || [ ! -f "$jsonl" ]; then
-  echo "export-session: could not resolve session JSONL; set GJC_SESSION_FILE or pass a session-id" >&2
+  echo "export-session: 세션 JSONL을 찾지 못했습니다 — GJC_SESSION_FILE을 설정하거나 session-id를 인자로 전달하세요." >&2
   exit 1
 fi
 
@@ -49,8 +51,8 @@ trap 'rm -rf "$tmp"' EXIT
 ( cd "$tmp" && gjc --export "$jsonl" >/dev/null )
 html="$(ls -1t "$tmp"/gjc-session-*.html 2>/dev/null | head -1 || true)"
 if [ -z "$html" ] || [ ! -f "$html" ]; then
-  echo "export-session: gjc --export produced no HTML" >&2
+  echo "export-session: gjc --export가 HTML을 생성하지 못했습니다." >&2
   exit 1
 fi
-mv -f "$html" "$outdir/session.html"            # fixed path => overwrite, no proliferating copies
-echo "export-session: wrote ${outdir#$repo_root/}/session.html (from $(basename "$jsonl"))"
+mv -f "$html" "$outdir/$out_name"               # 고정 경로 => 덮어쓰기, 사본 난립 방지
+echo "export-session: ${outdir#$repo_root/}/$out_name 기록 완료 (원본 $(basename "$jsonl"))"

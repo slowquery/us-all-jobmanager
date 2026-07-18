@@ -1,0 +1,13 @@
+# 대시보드 JSON(us-all-job-manager.json)을 파일 프로바이더로 자동 로드한다.
+
+apiVersion: 1
+
+providers:
+  - name: "UsAllJobManager"
+    orgId: 1
+    folder: "UsAllJobManager"
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    options:
+      path: /etc/grafana/provisioning/dashboards

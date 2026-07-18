@@ -1,0 +1,244 @@
+{
+  "id": null,
+  "uid": "usalljobmanager",
+  "title": "UsAllJobManager 관측성",
+  "description": "06-observability-design.md 확정 패널 6종 — 로그 카탈로그 6종(logs.txt NDJSON, Loki)을 소스로 한다. FileLoggerAdapter는 LogEvent 유니온의 `type` 필드를 로그 라인에서 제외하므로(discriminator 전용, 직렬화 시 필터링), 아래 쿼리는 `type` 라벨/필드에 의존하지 않고 이벤트별 고유 필드(to/phase/waitMs 등)의 존재 여부로 이벤트 종류를 구분한다.",
+  "tags": [
+    "us-all-job-manager",
+    "observability"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 2,
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "1. job 상태 분포 (상태 전이 to 필드)",
+      "description": "카탈로그 #4 상태 전이 이벤트를 전이 후 상태(to)로 라벨 집계한다. to 필드는 TransitionLogEvent에만 존재하므로 `to != \"\"`가 이벤트 종류 필터를 겸한다.",
+      "type": "piechart",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "sum by (to) (count_over_time({source=~\"http|scheduler\"} | json | to != \"\" [5m]))"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "2. 처리량 · 지연 p50/p95",
+      "description": "카탈로그 #1 HTTP 요청 로그의 latencyMs. 처리량은 5분 구간 요청 수(rate), 지연은 quantile_over_time.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "legendFormat": "처리량(req/s)",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "sum(rate({source=\"http\"} | json [5m]))"
+        },
+        {
+          "refId": "B",
+          "legendFormat": "p50 latencyMs",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "quantile_over_time(0.50, {source=\"http\"} | json | unwrap latencyMs [5m])"
+        },
+        {
+          "refId": "C",
+          "legendFormat": "p95 latencyMs",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "quantile_over_time(0.95, {source=\"http\"} | json | unwrap latencyMs [5m])"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "3. tick 성공률 · 소요시간",
+      "description": "카탈로그 #2/#3 — 성공률은 batch 이벤트의 succeeded/batchSize 합(unwrap이 해당 필드가 없는 tick/transition/lock 라인을 자동 제외), 소요시간은 tick 종료(phase=end, TickLogEvent 전용 필드) durationMs p95.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "legendFormat": "성공률",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "sum(sum_over_time({source=\"scheduler\"} | json | unwrap succeeded [5m])) / sum(sum_over_time({source=\"scheduler\"} | json | unwrap batchSize [5m]))"
+        },
+        {
+          "refId": "B",
+          "legendFormat": "tick durationMs p95",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "quantile_over_time(0.95, {source=\"scheduler\"} | json | phase=\"end\" | unwrap durationMs [5m])"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "4. 에러율",
+      "description": "카탈로그 #5 — level=error 라인 비율(alloy가 level을 스트림 라벨로 승격).",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "legendFormat": "에러율",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "sum(rate({level=\"error\"}[5m])) / sum(rate({source=~\"http|scheduler\"}[5m]))"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "5. 상태 전이 흐름 (from → to)",
+      "description": "카탈로그 #4 — from/to 조합별 전이 건수(1시간 윈도). to 필드 존재 여부로 상태 전이 이벤트만 필터한다.",
+      "type": "table",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "sum by (from, to) (count_over_time({source=~\"http|scheduler\"} | json | to != \"\" [1h]))",
+          "instant": true
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "6. 락 대기 시간 (waitMs)",
+      "description": "카탈로그 #6 — JsonDbJobRepository 직렬화 큐 임계구역 대기 시간. waitMs/holdMs는 LockLogEvent 전용 필드라 unwrap이 다른 이벤트 라인을 자동 제외한다. 저장소는 호출자(HTTP/스케줄러)를 구분하지 못해 source가 항상 'http'로 기록되는 알려진 한계가 있어(json-db-job.repository.ts emitLockEvent) source=~\"http|scheduler\"로 조회한다.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "legendFormat": "waitMs p50",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "quantile_over_time(0.50, {source=~\"http|scheduler\"} | json | unwrap waitMs [5m])"
+        },
+        {
+          "refId": "B",
+          "legendFormat": "waitMs p95",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "quantile_over_time(0.95, {source=~\"http|scheduler\"} | json | unwrap waitMs [5m])"
+        },
+        {
+          "refId": "C",
+          "legendFormat": "holdMs p95",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "quantile_over_time(0.95, {source=~\"http|scheduler\"} | json | unwrap holdMs [5m])"
+        }
+      ]
+    }
+  ]
+}

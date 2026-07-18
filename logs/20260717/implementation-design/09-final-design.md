@@ -136,6 +136,6 @@ interface Job {
 - **무제한 재시도**: 무한 루프 차단 우선으로 상한 3회 확정.
 
 ## Follow-ups
-- supersede 목록(구현 시 본 문서 우선): ① 04 §검증 실패 422 → **400**, ② 01 §Follow-up retryCount 보류 → **채택(3회)** + guard·전이표 확장, ③ 02 §포트 → **withBatch 추가**, ④ 03 §Strategy 이연 → **얇은 Strategy 채택** + 큐/워커 확장 경로 명시, ⑤ 05 §appendFile → **단일 write stream**, ⑥ 05·04 → **보안 조항 2건 명문화**, ⑦ 05·06 §traceId 발급 이연 → **OTel active span 정본(32-hex)·상시 초기화 확정**(사용자 채택, ralplan 인터뷰), ⑧ 08 §동시성 회귀 2건 한정 → **C-1~C-5 baseline 재현 5종 추가**(사용자 확정 전부 채택, C-5 Ponytail 예외 포함).
+- supersede 목록(구현 시 본 문서 우선): ① 04 §검증 실패 422 → **400**, ② 01 §Follow-up retryCount 보류 → **채택(3회)** + guard·전이표 확장, ③ 02 §포트 → **withBatch 추가**, ④ 03 §Strategy 이연 → **얇은 Strategy 채택** + 큐/워커 확장 경로 명시, ⑤ 05 §appendFile → **단일 write stream**, ⑥ 05·04 → **보안 조항 2건 명문화**, ⑦ 05·06 §traceId 발급 이연 → **OTel active span 정본(32-hex)·상시 초기화 확정**(사용자 채택, ralplan 인터뷰), ⑧ 08 §동시성 회귀 2건 한정 → **C-1~C-5 baseline 재현 5종 추가**(사용자 확정 전부 채택, C-5 Ponytail 예외 포함), ⑨ 본 문서 §withBatch(ids, transitionFn) → **withBatch(ids, target) 단일 target 시그니처**(구현 세션 확정, [근거](../../20260718/implementation/02-implementation-deviations.md)), ⑩ 본 문서 §전이표 "동일 상태 재전이 409" → **동일-target PATCH는 idempotent no-op(2xx)**, guard는 실제 상태 변화 요청에만 적용(무손실 불변식은 회귀 테스트가 보장), ⑪ §TransitionResult → **transitioned/previousStatus 필드 확장**(transition 이벤트 emit의 임계구역 내 판정 정본).
 - `.gjc/rules/60-ponytail.md` 편입 세션(Rule 5 승인 경유) — 07 초안 골격 사용.
 - 코드 구현 세션: 본 문서를 정본 입력으로 별도 진행(트레이싱 계측·docker-compose 포함).

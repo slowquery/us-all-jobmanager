@@ -2,7 +2,7 @@
 set -euo pipefail
 branch="$(git symbolic-ref --short HEAD 2>/dev/null || echo DETACHED)"
 if [ "$branch" = "master" ]; then
-  echo "governance/pre-merge-commit: merge commits on 'master' are refused locally. Squash-merge via PR on GitHub (Rule 7)." >&2
+  echo "governance/pre-merge-commit: 'master'에서의 머지 커밋은 로컬에서 거부됩니다. GitHub에서 squash PR로 머지하세요 (Rule 7)." >&2
   exit 1
 fi
 exit 0
