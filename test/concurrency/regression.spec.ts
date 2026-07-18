@@ -26,10 +26,11 @@ import { InMemoryLogger } from '../../src/application/testing/in-memory-logger';
  * S7 IRC 교신). 이는 "동일-target PATCH는 idempotent no-op"이라는 S2 계약과 정합하는 확정
  * 동작이므로 이 테스트는 08 원문의 "1거부" 문언 대신 **실제로 보장되어야 하는 무손실 불변식**
  * (retryCount 정확히 1회만 증가 + 최종 상태가 pending으로 정확히 1회 전이)을 하드 assert한다.
- * `transition` 로그 이벤트가 no-op 두 번째 호출에서도 중복 emit되는 것은 실결함으로 관측되었으나
- * (05 로그 카탈로그 #4 "커밋된 전이만 기록" 위반), 리더가 이후 세션에서 `PatchJobUseCase`를
- * 수정할 예정이므로 이 테스트는 이벤트 **개수**를 assert로 고정하지 않는다(수정 시 깨지는 것을
- * 방지).
+ * `transition` 로그 이벤트의 no-op 중복 emit은 관측 당시 실결함이었으나(05 로그 카탈로그 #4
+ * "커밋된 전이만 기록" 위반), 이후 `TransitionResult.transitioned`(임계구역 내부 판정) 기반으로
+ * `PatchJobUseCase`가 수정되어 해소되었다(커밋 9b54a2c). 이 테스트는 이벤트 **개수**를 assert로
+ * 고정하지 않는 원래 방침을 유지한다 — 이벤트 정합성 자체는 patch-job.use-case.spec의
+ * "no-op 시 transition 이벤트 0건" 하드 assert가 담당한다.
  */
 
 /** 테스트 1건마다 os.tmpdir() 하위에 고유 디렉터리를 만들어 파일 격리(afterEach에서 삭제)한다. */

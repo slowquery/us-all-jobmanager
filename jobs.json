@@ -1,1 +1,40 @@
-{"jobs":[{"id":"92dc6bef-1f52-41cb-bea7-f6e1beb882ec","title":"샘플 대기 작업","description":"GET /jobs 조회 확인용 pending 시딩 데이터.","status":"completed","retryCount":0,"createdAt":"2026-07-17T00:00:00.000Z","updatedAt":"2026-07-18T08:28:19.417Z"},{"id":"80d8c182-52c9-44b4-aca4-0054248e251f","title":"샘플 처리 중 작업","description":"스케줄러가 선점한 processing 상태 시딩 데이터.","status":"processing","retryCount":0,"createdAt":"2026-07-17T00:01:00.000Z","updatedAt":"2026-07-17T00:02:00.000Z"},{"id":"ae441583-9de9-4c22-b330-94f96214ab8e","title":"샘플 완료 작업","description":"스케줄러가 성공 처리한 completed 상태 시딩 데이터.","status":"completed","retryCount":0,"createdAt":"2026-07-17T00:03:00.000Z","updatedAt":"2026-07-17T00:05:00.000Z"},{"id":"a76e966a-c9bf-4fb9-aa7b-cdc3f83cd977","title":"샘플 실패 작업","description":"PATCH /jobs/:id 재시도(failed→pending) 확인용 failed 상태 시딩 데이터. retryCount<3이므로 재시도 가능.","status":"failed","retryCount":1,"createdAt":"2026-07-17T00:06:00.000Z","updatedAt":"2026-07-17T00:08:00.000Z"}]}
+{
+  "jobs": [
+    {
+      "id": "92dc6bef-1f52-41cb-bea7-f6e1beb882ec",
+      "title": "샘플 대기 작업",
+      "description": "GET /jobs 조회 확인용 pending 시딩 데이터. 스케줄러 tick이 선점 대상으로 집어간다.",
+      "status": "pending",
+      "retryCount": 0,
+      "createdAt": "2026-07-17T00:00:00.000Z",
+      "updatedAt": "2026-07-17T00:00:00.000Z"
+    },
+    {
+      "id": "80d8c182-52c9-44b4-aca4-0054248e251f",
+      "title": "샘플 처리 중 작업",
+      "description": "스케줄러가 선점한 processing 상태 시딩 데이터.",
+      "status": "processing",
+      "retryCount": 0,
+      "createdAt": "2026-07-17T00:01:00.000Z",
+      "updatedAt": "2026-07-17T00:02:00.000Z"
+    },
+    {
+      "id": "ae441583-9de9-4c22-b330-94f96214ab8e",
+      "title": "샘플 완료 작업",
+      "description": "스케줄러가 성공 처리한 completed 상태 시딩 데이터.",
+      "status": "completed",
+      "retryCount": 0,
+      "createdAt": "2026-07-17T00:03:00.000Z",
+      "updatedAt": "2026-07-17T00:04:00.000Z"
+    },
+    {
+      "id": "c7a9f3d1-4b2e-4f6a-9c8d-5e7f01234567",
+      "title": "샘플 실패 작업",
+      "description": "처리 실패 후 PATCH {\"status\":\"pending\"} 재시도 대상(retryCount 1, 상한 3) failed 상태 시딩 데이터.",
+      "status": "failed",
+      "retryCount": 1,
+      "createdAt": "2026-07-17T00:05:00.000Z",
+      "updatedAt": "2026-07-17T00:06:00.000Z"
+    }
+  ]
+}
