@@ -1,0 +1,22 @@
+{
+  "suite": "admin-page browser E2E",
+  "runner": "GJC built-in browser (puppeteer/Chromium)",
+  "target": "http://localhost:3200/admin/ (NestJS static-served committed admin-ui Vite build)",
+  "executedAt": "2026-07-18 (KST)",
+  "summary": { "total": 12, "pass": 12, "fail": 0 },
+  "cases": [
+    { "id": "E2E-01", "status": "pass", "evidence": ["E2E-01-load.png"], "observedApi": "GET /jobs 200", "notes": "다크 테마(html.dark, bodyBg rgb(2,6,23)); bento 타일 Total5/Pending2/Processing1/Completed1/Failed1 == 시드." },
+    { "id": "E2E-02", "status": "pass", "evidence": ["E2E-01-load.png"], "observedApi": "GET /jobs 200", "notes": "5행 렌더, 상태 뱃지 색/텍스트 정확(amber/blue/green/red)." },
+    { "id": "E2E-03", "status": "pass", "evidence": ["E2E-03-search-title.png"], "observedApi": "GET /jobs/search?title=로그 200", "notes": "제목 부분검색 '로그' → 1행(E2E 로그 로테이션)." },
+    { "id": "E2E-04", "status": "pass", "evidence": ["E2E-04-filter-completed.png", "E2E-04-filter-pending.png"], "observedApi": "GET /jobs/search?status=... 200", "notes": "completed→3, processing→1, failed→1, AND(배포+completed)→1, 초기화→5. (pending은 스케줄러 tick으로 0이 되어 completed 등 안정 상태로 검증)." },
+    { "id": "E2E-05", "status": "pass", "evidence": ["E2E-05-empty.png"], "observedApi": "GET /jobs/search 200 (0건)", "notes": "존재하지 않는 제목 → 빈 상태 패널 '표시할 작업이 없습니다'." },
+    { "id": "E2E-06", "status": "pass", "evidence": ["E2E-06-detail-modal.png", "E2E-06-07-fixed.png"], "observedApi": "row click (client)", "notes": "다이얼로그 title/description/status/created/updated 표시(retryCount 미표시); ESC 닫힘; 포커스가 호출 행(TR)으로 복귀(수정 반영)." },
+    { "id": "E2E-07", "status": "pass", "evidence": ["E2E-07-edit.png", "E2E-06-07-fixed.png"], "observedApi": "PATCH /jobs/:id 200", "notes": "제목/설명 수정→PATCH 200→성공 토스트→다이얼로그 닫힘(수정 반영)→행 갱신→새로고침 후 유지." },
+    { "id": "E2E-08", "status": "pass", "evidence": ["E2E-08-retry-before.png", "E2E-08-retry-after.png"], "observedApi": "PATCH /jobs/:id {status:pending} 200", "notes": "failed 작업에서만 Retry 노출→클릭 시 Failed→Pending, 토스트; API status=pending 확인." },
+    { "id": "E2E-09", "status": "pass", "evidence": ["E2E-09-confirm.png", "E2E-09-after.png"], "observedApi": "DELETE /jobs/:id 204; GET → 404 NOT_FOUND", "notes": "AlertDialog 확인→204→행 제거(5→4)→토스트; GET 삭제 id → NOT_FOUND." },
+    { "id": "E2E-09b", "status": "pass", "evidence": ["E2E-09-after.png", "E2E-01-load.png"], "observedApi": "DELETE /jobs/:id(processing) 409 JOB_IN_PROGRESS", "notes": "processing 행 삭제 버튼 disabled=true; 강제 API DELETE → 409 JOB_IN_PROGRESS." },
+    { "id": "E2E-10", "status": "pass", "evidence": ["E2E-10-t0-pending.png", "E2E-10-t1-advanced.png"], "observedApi": "POST /jobs 201; 스케줄러 전이", "notes": "신규 작업이 5s 폴링으로 Pending 표시(수동 새로고침 없음)→tick+poll 후 Completed로 자동 전이." },
+    { "id": "E2E-11", "status": "pass", "evidence": ["E2E-11-error-state.png"], "observedApi": "DELETE stale id → 404 NOT_FOUND", "notes": "백엔드에서 삭제된 작업을 UI에서 삭제 시도→'이미 삭제된 작업입니다' 에러 토스트; UI 사용 가능 유지(행/검색/새로고침 정상)." }
+  ],
+  "notes": "인증은 범위 외(보안 리뷰 인지). 스케줄러 SCHEDULER_TICK_MS=60s로 시드 pending 작업이 실행 중 completed로 전이됨(정상 동작). 테스트는 임시 cwd(/tmp/e2e-run)에서 백엔드를 기동해 워크트리 jobs.json을 오염시키지 않음. E2E-06 포커스 복귀와 E2E-07 저장후 닫힘은 초기 관찰된 편차를 수정 후 재검증 통과."
+}

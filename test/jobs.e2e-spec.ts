@@ -66,6 +66,7 @@ describe('Jobs API (e2e)', () => {
   let seededCompleted: Job;
   let seededRetryExceeded: Job;
   let seededRetrySuccess: Job;
+  let seededProcessing: Job;
 
   beforeAll(async () => {
     dir = mkdtempSync(join(tmpdir(), 'jobs-e2e-'));
@@ -78,7 +79,17 @@ describe('Jobs API (e2e)', () => {
     seededCompleted = makeSeedJob({ status: 'completed' });
     seededRetryExceeded = makeSeedJob({ status: 'failed', retryCount: MAX_RETRY_COUNT });
     seededRetrySuccess = makeSeedJob({ status: 'failed', retryCount: 0 });
-    writeFileSync(dbPath, JSON.stringify({ jobs: [seededCompleted, seededRetryExceeded, seededRetrySuccess] }));
+    // DELETE 409(JOB_IN_PROGRESS)도 processing 상태가 스케줄러 전용 전이라 API로 재현 불가하므로
+    // 동일하게 직접 시딩한다.
+    seededProcessing = makeSeedJob({ status: 'processing' });
+    writeFileSync(dbPath, JSON.stringify({
+      jobs: [
+        seededCompleted,
+        seededRetryExceeded,
+        seededRetrySuccess,
+        seededProcessing,
+      ],
+    }));
 
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(LOGGER_PORT)
@@ -284,6 +295,46 @@ describe('Jobs API (e2e)', () => {
       expect(requestEvent.traceId).toMatch(TRACE_ID_PATTERN);
       expect(transitionEvent.traceId).toMatch(TRACE_ID_PATTERN);
       expect(requestEvent.traceId).toBe(transitionEvent.traceId);
+    });
+  });
+
+  describe('DELETE /jobs/:id', () => {
+    it('생성 후 삭제하면 204를 반환하고 이후 GET은 404 NOT_FOUND를 반환한다', async () => {
+      const created = await request(app.getHttpServer())
+        .post('/jobs')
+        .send({ title: 'Deletable', description: 'd' })
+        .expect(201);
+
+      await request(app.getHttpServer()).delete(`/jobs/${created.body.id}`).expect(204);
+
+      const response = await request(app.getHttpServer()).get(`/jobs/${created.body.id}`).expect(404);
+      expect(response.body.code).toBe('NOT_FOUND');
+    });
+
+    it('존재하지 않는 id는 404 NOT_FOUND를 반환한다', async () => {
+      const response = await request(app.getHttpServer()).delete('/jobs/does-not-exist').expect(404);
+      expect(response.body.code).toBe('NOT_FOUND');
+    });
+
+    it('같은 id를 두 번 DELETE하면 두 번째는 404 NOT_FOUND를 반환한다', async () => {
+      const created = await request(app.getHttpServer())
+        .post('/jobs')
+        .send({ title: 'Double delete', description: 'd' })
+        .expect(201);
+
+      await request(app.getHttpServer()).delete(`/jobs/${created.body.id}`).expect(204);
+      const response = await request(app.getHttpServer()).delete(`/jobs/${created.body.id}`).expect(404);
+      expect(response.body.code).toBe('NOT_FOUND');
+    });
+
+    it('processing 상태인 job의 DELETE는 409 JOB_IN_PROGRESS를 반환하고 여전히 조회 가능하다', async () => {
+      const response = await request(app.getHttpServer())
+        .delete(`/jobs/${seededProcessing.id}`)
+        .expect(409);
+      expect(response.body.code).toBe('JOB_IN_PROGRESS');
+
+      const stillThere = await request(app.getHttpServer()).get(`/jobs/${seededProcessing.id}`).expect(200);
+      expect(stillThere.body.status).toBe('processing');
     });
   });
 });

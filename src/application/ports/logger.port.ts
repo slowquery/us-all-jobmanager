@@ -64,6 +64,12 @@ export interface ErrorLogEvent extends BaseLogEvent {
   errorCode: string;
 }
 
+/** job 삭제 커밋 이벤트. `delete` 성공 경로에서만 발행된다(거부 건은 별도 이벤트를 남기지 않는다). */
+export interface DeleteLogEvent extends BaseLogEvent {
+  type: 'delete';
+  jobId: string;
+}
+
 /**
  * `LoggerPort.log`가 받는 구조화 로그 이벤트 판별 유니온(05-logging-design.md 이벤트 유형).
  * `timestamp`/`traceId`/`spanId`는 이 타입에 포함하지 않는다 — 그 값의 발급·주입은
@@ -75,7 +81,8 @@ export type LogEvent =
   | BatchLogEvent
   | TransitionLogEvent
   | LockLogEvent
-  | ErrorLogEvent;
+  | ErrorLogEvent
+  | DeleteLogEvent;
 
 /**
  * 구조화 로그 출력 포트. `application`/`adapters` 계층은 이 인터페이스에만 의존하며,

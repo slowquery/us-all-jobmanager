@@ -1,0 +1,4 @@
+# admin-ui Vite 빌드 산출물. 커밋되지만 생성물이므로 PR diff 노이즈를 억제하고
+# linguist 언어 통계에서 제외한다. 충돌 시 손으로 병합하지 말 것 —
+# admin-ui/ 소스에서 충돌을 해소한 뒤 `yarn build:admin`으로 재생성해 커밋한다.
+public/** linguist-generated -diff

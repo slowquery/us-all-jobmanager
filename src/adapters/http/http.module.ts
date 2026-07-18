@@ -3,6 +3,7 @@ import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { JobRepository } from '../../application/ports/job-repository.port';
 import { LoggerPort } from '../../application/ports/logger.port';
 import { CreateJobUseCase } from '../../application/use-cases/create-job.use-case';
+import { DeleteJobUseCase } from '../../application/use-cases/delete-job.use-case';
 import { GetJobsUseCase } from '../../application/use-cases/get-jobs.use-case';
 import { GetJobUseCase } from '../../application/use-cases/get-job.use-case';
 import { PatchJobUseCase } from '../../application/use-cases/patch-job.use-case';
@@ -51,6 +52,14 @@ import { LoggingInterceptor } from './logging.interceptor';
     {
       provide: PatchJobUseCase,
       useFactory: (repository: JobRepository, logger: LoggerPort): PatchJobUseCase => new PatchJobUseCase(repository, logger),
+      inject: [
+        JOB_REPOSITORY,
+        LOGGER_PORT,
+      ],
+    },
+    {
+      provide: DeleteJobUseCase,
+      useFactory: (repository: JobRepository, logger: LoggerPort): DeleteJobUseCase => new DeleteJobUseCase(repository, logger),
       inject: [
         JOB_REPOSITORY,
         LOGGER_PORT,

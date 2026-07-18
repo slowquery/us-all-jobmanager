@@ -316,6 +316,98 @@ describe('JsonDbJobRepository', () => {
     });
   });
 
+  describe('delete', () => {
+    it('pending/completed/failed job은 삭제되고 파일에서 제거된다', async () => {
+      const repo = new JsonDbJobRepository(dbPath);
+      const job = await repo.create({
+        title: 't',
+        description: 'd',
+      });
+
+      const result = await repo.delete(job.id);
+
+      expect(result).toEqual({ ok: true });
+      expect(await repo.findById(job.id)).toBeNull();
+      const stored = JSON.parse(readFileSync(dbPath, 'utf-8')) as { jobs: Job[] };
+      expect(stored.jobs.find((j) => j.id === job.id)).toBeUndefined();
+    });
+
+    it('존재하지 않는 id는 NOT_FOUND로 거부된다', async () => {
+      const repo = new JsonDbJobRepository(dbPath);
+
+      const result = await repo.delete('missing-id');
+
+      expect(result).toEqual({
+        ok: false,
+        reason: 'NOT_FOUND',
+      });
+    });
+
+    it('processing job은 FORBIDDEN_PROCESSING으로 거부되고 무쓰기다(파일에 그대로 남는다)', async () => {
+      const seeded = makeJob({ status: 'processing' });
+      writeFileSync(dbPath, JSON.stringify({ jobs: [seeded] }));
+      const repo = new JsonDbJobRepository(dbPath);
+
+      const result = await repo.delete(seeded.id);
+
+      expect(result).toEqual({
+        ok: false,
+        reason: 'FORBIDDEN_PROCESSING',
+      });
+      const stored = await repo.findById(seeded.id);
+      expect(stored).not.toBeNull();
+      expect(stored?.status).toBe('processing');
+    });
+
+    it('delete도 jobId와 함께 waitMs/holdMs를 포함한 lock 이벤트를 기록한다(withTransition과 락 이벤트 계약 동일)', async () => {
+      const events: unknown[] = [];
+      const logger: LoggerPort = { log: (event) => events.push(event) };
+      const repo = new JsonDbJobRepository(dbPath, logger);
+      const job = await repo.create({
+        title: 't',
+        description: 'd',
+      });
+
+      events.length = 0;
+      await repo.delete(job.id);
+
+      const lockEvents = events.filter((e) => (e as { type: string }).type === 'lock');
+      expect(lockEvents).toHaveLength(1);
+      const lockEvent = lockEvents[0] as { jobId: string; waitMs: number; holdMs: number };
+      expect(lockEvent.jobId).toBe(job.id);
+      expect(typeof lockEvent.waitMs).toBe('number');
+      expect(typeof lockEvent.holdMs).toBe('number');
+    });
+
+    it('직렬화 큐 경유로 동시 delete/withTransition이 서로를 덮어쓰지 않고 순차 처리된다', async () => {
+      const repo = new JsonDbJobRepository(dbPath);
+      const jobs = await Promise.all([
+        repo.create({
+          title: 'a',
+          description: 'd',
+        }),
+        repo.create({
+          title: 'b',
+          description: 'd',
+        }),
+      ]);
+
+      const [
+        deleteResult,
+        transitionResult,
+      ] = await Promise.all([
+        repo.delete(jobs[0].id),
+        repo.withTransition(jobs[1].id, 'processing'),
+      ]);
+
+      expect(deleteResult).toEqual({ ok: true });
+      expect(transitionResult.ok).toBe(true);
+      expect(await repo.findById(jobs[0].id)).toBeNull();
+      const remaining = await repo.findById(jobs[1].id);
+      expect(remaining?.status).toBe('processing');
+    });
+  });
+
   describe('락 이벤트 로깅', () => {
     it('withTransition은 jobId와 함께 waitMs/holdMs를 포함한 lock 이벤트를 기록한다', async () => {
       const events: unknown[] = [];

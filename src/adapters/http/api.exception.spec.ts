@@ -10,6 +10,14 @@ describe('resolveErrorEnvelope', () => {
     });
   });
 
+  it('409 JOB_IN_PROGRESS ApiException은 envelope의 code와 status를 그대로 사용한다', () => {
+    const exception = new ApiException(HttpStatus.CONFLICT, 'JOB_IN_PROGRESS', '처리 중인 작업은 삭제할 수 없습니다.');
+    expect(resolveErrorEnvelope(exception)).toEqual({
+      status: HttpStatus.CONFLICT,
+      code: 'JOB_IN_PROGRESS',
+    });
+  });
+
   it('400 HttpException은 VALIDATION_FAILED로 매핑된다', () => {
     const exception = new HttpException('bad', HttpStatus.BAD_REQUEST);
     expect(resolveErrorEnvelope(exception)).toEqual({
