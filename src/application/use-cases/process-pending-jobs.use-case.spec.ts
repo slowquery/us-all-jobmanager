@@ -30,8 +30,28 @@ describe('ProcessPendingJobsUseCase', () => {
     expect(result).toEqual({ batchSize: 2, succeeded: 2, failed: 0 });
     expect(await repository.findById('a')).toMatchObject({ status: 'completed' });
     expect(await repository.findById('b')).toMatchObject({ status: 'completed' });
-    expect(logger.events).toHaveLength(1);
-    expect(logger.events[0]).toMatchObject({ type: 'batch', batchSize: 2, succeeded: 2, failed: 0 });
+    expect(logger.events).toHaveLength(3);
+    const transitionEvents = logger.events.filter((event) => event.type === 'transition');
+    expect(transitionEvents).toHaveLength(2);
+    expect(transitionEvents).toContainEqual(
+      expect.objectContaining({
+        type: 'transition',
+        jobId: 'a',
+        from: 'processing',
+        to: 'completed',
+        actor: 'scheduler',
+      }),
+    );
+    expect(transitionEvents).toContainEqual(
+      expect.objectContaining({
+        type: 'transition',
+        jobId: 'b',
+        from: 'processing',
+        to: 'completed',
+        actor: 'scheduler',
+      }),
+    );
+    expect(logger.events[logger.events.length - 1]).toMatchObject({ type: 'batch', batchSize: 2, succeeded: 2, failed: 0 });
   });
 
   it('처리 실패로 판정된 job은 failed로 커밋되고 succeeded/failed 집계가 분리된다', async () => {
@@ -47,6 +67,13 @@ describe('ProcessPendingJobsUseCase', () => {
     expect(result).toEqual({ batchSize: 2, succeeded: 1, failed: 1 });
     expect(await repository.findById('a')).toMatchObject({ status: 'completed' });
     expect(await repository.findById('b')).toMatchObject({ status: 'failed' });
+    const transitionEvents = logger.events.filter((event) => event.type === 'transition');
+    expect(transitionEvents).toContainEqual(
+      expect.objectContaining({ type: 'transition', jobId: 'a', from: 'processing', to: 'completed', actor: 'scheduler' }),
+    );
+    expect(transitionEvents).toContainEqual(
+      expect.objectContaining({ type: 'transition', jobId: 'b', from: 'processing', to: 'failed', actor: 'scheduler' }),
+    );
   });
 
   it('listByStatus 조회는 SCHEDULER_BATCH_SIZE(10건)를 상한으로 사용한다', async () => {

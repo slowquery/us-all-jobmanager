@@ -22,7 +22,10 @@ export interface ProcessPendingJobsResult {
  * 3. 선점에 성공한 job 각각을 {@link JobProcessor}로 처리해 성공/실패를 판정한다.
  * 4. 성공/실패 판정 결과를 각각 `withBatch(..., 'completed')`/`withBatch(..., 'failed')`로
  *    일괄 커밋한다(전이당 파일 write 1회, tick당 최대 2회로 상한 — 09 확정 #2 성능 근거).
- * 5. 집계 결과를 {@link LoggerPort}로 전달한다(05-logging-design.md 배치 이벤트).
+ * 5. 커밋된 job별로 {@link LoggerPort} transition 이벤트(actor='scheduler')를 emit한다
+ *    (05-logging-design.md "상태 전이 이벤트" 절 — emit 지점은 커밋 완료 직후, S3가 스케줄러
+ *    경로의 emit 책임을 이 유스케이스로 이관).
+ * 6. 집계 결과를 {@link LoggerPort}로 전달한다(05-logging-design.md 배치 이벤트).
  *
  * adapter(`JobSchedulerAdapter`)는 `isTickRunning` 플래그·tick 시작/종료/스킵 로그만 담당하고,
  * 이 유스케이스는 tick이 실제로 실행되기로 결정된 이후의 처리 로직만 안다(Rule 3: `@nestjs/*`
@@ -80,6 +83,9 @@ export class ProcessPendingJobsUseCase {
     const failed: Job[] =
       failedIds.length > 0 ? (await this.jobRepository.withBatch(failedIds, 'failed')).committed : [];
 
+    this.emitTransitionEvents(completed, 'completed');
+    this.emitTransitionEvents(failed, 'failed');
+
     const result: ProcessPendingJobsResult = {
       batchSize: claimed.committed.length,
       succeeded: completed.length,
@@ -95,5 +101,25 @@ export class ProcessPendingJobsUseCase {
     });
 
     return result;
+  }
+
+  /**
+   * 커밋된 job 목록에 대해 transition 이벤트를 emit한다. `from`은 항상 `'processing'`이다 — 이
+   * 유스케이스가 커밋하는 두 전이(선점 완료 후 처리 결과 커밋)는 모두 `processing`에서 출발하기
+   * 때문이다(actor='scheduler', S3 이관 책임).
+   */
+  private emitTransitionEvents(jobs: Job[], to: 'completed' | 'failed'): void {
+    for (const job of jobs) {
+      this.logger.log({
+        type: 'transition',
+        level: 'info',
+        source: 'scheduler',
+        message: 'transition committed',
+        jobId: job.id,
+        from: 'processing',
+        to,
+        actor: 'scheduler',
+      });
+    }
   }
 }
