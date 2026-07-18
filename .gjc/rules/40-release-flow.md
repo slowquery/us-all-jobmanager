@@ -39,6 +39,7 @@ alwaysApply: true
 | `gh pr merge --squash` | only after explicit user approval; refused for reviewers | GitHub squash-only (hard shape) + approval (advisory) |
 | `gh pr merge --merge` / `--rebase` | refused server-side | GitHub squash-only (hard) |
 | PR head `package.json` version ≤ base(`master`) | refused | CI `verify` `SemVer bump 게이트` (hard) |
+| PR에서 추가/변경된 `logs/**/*.md`에 한글 없음 | refused | CI `verify` `결정 로그 한글 게이트` (hard) |
 | 거버넌스 스크립트/훅·CI의 사용자 노출 출력 문구 | 한글 필수 | 리뷰(advisory) + Rule 9 |
 
 Honest note: local prompts cannot stop a human clicking merge in the web UI; only the GitHub

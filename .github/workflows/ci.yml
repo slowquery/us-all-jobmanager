@@ -58,6 +58,40 @@ jobs:
           }
           console.log(`SemVer bump 확인: ${baseVersion} -> ${head}`);
           EOF
+      - name: 결정 로그 한글 게이트
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          node <<'EOF'
+          const { execSync } = require('child_process');
+          const fs = require('fs');
+          const base = process.env.BASE_REF;
+          // PR에서 추가(A)/수정(M)된 logs/**/*.md 목록(TEMPLATE.md 제외). 기존 영문 로그는 소급하지 않는다.
+          let files = [];
+          try {
+            const out = execSync(`git diff --name-only --diff-filter=AM origin/${base}...HEAD -- 'logs/**/*.md' 'logs/*.md'`, { encoding: 'utf8' });
+            files = out.split('\n').map((f) => f.trim()).filter(Boolean).filter((f) => !f.endsWith('/TEMPLATE.md') && f !== 'logs/TEMPLATE.md');
+          } catch (e) {
+            console.log(`::warning::base(origin/${base}) diff를 읽지 못했습니다 — 결정 로그 한글 게이트를 건너뜁니다.`);
+            process.exit(0);
+          }
+          const hangul = /[\uAC00-\uD7A3]/;
+          const offenders = [];
+          for (const file of files) {
+            if (!fs.existsSync(file)) continue;
+            const text = fs.readFileSync(file, 'utf8');
+            if (!hangul.test(text)) offenders.push(file);
+          }
+          if (offenders.length > 0) {
+            for (const file of offenders) {
+              console.log(`::error file=${file}::결정 로그는 한글로 작성해야 합니다 — 한글이 전혀 없습니다 (Rule 4/Rule 9).`);
+            }
+            console.log(`::error::결정 로그 한글 게이트 실패: ${offenders.length}개 파일에 한글이 없습니다.`);
+            process.exit(1);
+          }
+          console.log(`결정 로그 한글 게이트 확인: 검사 대상 ${files.length}개 모두 한글 포함.`);
+          EOF
       - name: Lint
         run: yarn lint
       - name: Build
