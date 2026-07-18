@@ -61,8 +61,11 @@ export class PatchJobUseCase {
     const target: JobStatus = input.status === 'pending' ? 'pending' : current.status;
     const result = await this.jobRepository.withTransition(input.id, target, patch);
 
-    if (result.ok && result.job.status !== current.status) {
-      this.emitTransitionEvent(current.status, result.job);
+    // 실제 전이 커밋 여부는 임계구역 내부 판정(result.transitioned)이 정본이다 —
+    // 락 밖에서 읽은 current 기준 비교는 동시 요청 시 stale해 no-op 호출에도
+    // 이벤트를 중복 emit할 수 있다(S7 동시성 실측에서 관측된 결함의 근본 원인).
+    if (result.ok && result.transitioned) {
+      this.emitTransitionEvent(result.previousStatus, result.job);
     }
 
     return result;

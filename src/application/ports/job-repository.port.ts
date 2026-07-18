@@ -36,7 +36,14 @@ export type TransitionFailureReason = 'NOT_FOUND' | 'INVALID_TRANSITION' | 'RETR
  * 1:1로 매핑되도록 설계되어 adapter가 그대로 HTTP 상태 코드로 변환할 수 있다.
  */
 export type TransitionResult =
-  | { ok: true; job: Job }
+  | {
+    ok: true;
+    job: Job;
+    /** 임계구역 내부 판정 기준으로 실제 status 변화가 커밋됐는지(true) / field-only no-op였는지(false). 락 밖 stale 읽기 기반 판정을 금지하기 위해 구현체가 임계구역 안에서 확정한다. */
+    transitioned: boolean;
+    /** 임계구역 내부에서 재조회한 전이 직전 status(transition 이벤트의 from 정본). */
+    previousStatus: JobStatus;
+  }
   | { ok: false; reason: TransitionFailureReason };
 
 /**

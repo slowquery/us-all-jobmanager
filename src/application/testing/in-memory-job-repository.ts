@@ -92,6 +92,8 @@ export class InMemoryJobRepository implements JobRepository {
     return {
       ok: true,
       job: updated,
+      transitioned: !isFieldOnlyUpdate,
+      previousStatus: current.status,
     };
   }
 

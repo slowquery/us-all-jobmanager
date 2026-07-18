@@ -219,6 +219,8 @@ export class JsonDbJobRepository implements JobRepository {
       return {
         ok: true,
         job: updated,
+        transitioned: !isFieldOnlyUpdate,
+        previousStatus: current.status,
       };
     }, id);
   }
