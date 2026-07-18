@@ -1,4 +1,4 @@
-import { CallHandler, ExecutionContext, NotFoundException } from '@nestjs/common';
+import { BadRequestException, CallHandler, ExecutionContext, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { firstValueFrom, of, throwError } from 'rxjs';
 import { InMemoryLogger } from '../../application/testing/in-memory-logger';
 import { ApiException } from './api.exception';
@@ -63,5 +63,27 @@ describe('LoggingInterceptor', () => {
     await expect(firstValueFrom(interceptor.intercept(context, makeHandler(undefined, error)))).rejects.toBe(error);
 
     expect(logger.events[0]).toMatchObject({ statusCode: 404, errorCode: 'NOT_FOUND' });
+  });
+
+  it('NestJS 내장 400(BadRequestException)은 errorCode VALIDATION_FAILED로 기록한다', async () => {
+    const logger = new InMemoryLogger();
+    const interceptor = new LoggingInterceptor(logger);
+    const context = makeContext('POST', '/jobs', 200);
+    const error = new BadRequestException(['title must be a string']);
+
+    await expect(firstValueFrom(interceptor.intercept(context, makeHandler(undefined, error)))).rejects.toBe(error);
+
+    expect(logger.events[0]).toMatchObject({ statusCode: 400, errorCode: 'VALIDATION_FAILED' });
+  });
+
+  it('그 외 HttpException(403, 5xx 미만)은 errorCode HTTP_ERROR로 기록한다', async () => {
+    const logger = new InMemoryLogger();
+    const interceptor = new LoggingInterceptor(logger);
+    const context = makeContext('DELETE', '/jobs/1', 200);
+    const error = new ForbiddenException('접근 권한이 없습니다');
+
+    await expect(firstValueFrom(interceptor.intercept(context, makeHandler(undefined, error)))).rejects.toBe(error);
+
+    expect(logger.events[0]).toMatchObject({ statusCode: 403, errorCode: 'HTTP_ERROR' });
   });
 });

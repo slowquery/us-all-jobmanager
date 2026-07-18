@@ -76,6 +76,24 @@ describe('ProcessPendingJobsUseCase', () => {
     );
   });
 
+  it('전건 실패로 판정되면 succeeded 커밋(withBatch)을 건너뛰고 completed 배열은 비어 있다', async () => {
+    const repository = new InMemoryJobRepository();
+    repository.seed(makeJob({ id: 'a', status: 'pending' }));
+    repository.seed(makeJob({ id: 'b', status: 'pending' }));
+    const logger = new InMemoryLogger();
+    const processor = new DefaultJobProcessor(() => 'failed');
+    const useCase = new ProcessPendingJobsUseCase(repository, processor, logger);
+
+    const result = await useCase.execute();
+
+    expect(result).toEqual({ batchSize: 2, succeeded: 0, failed: 2 });
+    expect(await repository.findById('a')).toMatchObject({ status: 'failed' });
+    expect(await repository.findById('b')).toMatchObject({ status: 'failed' });
+    const transitionEvents = logger.events.filter((event) => event.type === 'transition');
+    expect(transitionEvents).toHaveLength(2);
+    expect(transitionEvents.every((event) => (event as { to: string }).to === 'failed')).toBe(true);
+  });
+
   it('listByStatus 조회는 SCHEDULER_BATCH_SIZE(10건)를 상한으로 사용한다', async () => {
     const repository = new InMemoryJobRepository();
     for (let i = 0; i < 15; i += 1) {

@@ -70,6 +70,16 @@ describe('JobsController', () => {
     await expect(controller.getById('missing')).rejects.toMatchObject({ status: HttpStatus.NOT_FOUND });
   });
 
+  it('getById: 존재하면 200으로 job을 응답한다', async () => {
+    const { controller, repository } = makeController();
+    repository.seed(makeJob({ id: 'a', title: 'found' }));
+
+    const response = await controller.getById('a');
+
+    expect(response.id).toBe('a');
+    expect(response.title).toBe('found');
+  });
+
   it('patch: 필드가 하나도 없으면 400 VALIDATION_FAILED ApiException을 던진다', async () => {
     const { controller, repository } = makeController();
     repository.seed(makeJob({ id: 'a' }));

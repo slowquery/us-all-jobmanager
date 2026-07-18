@@ -1,4 +1,4 @@
-import { ArgumentsHost, BadRequestException, HttpStatus, NotFoundException } from '@nestjs/common';
+import { ArgumentsHost, BadRequestException, ForbiddenException, HttpException, HttpStatus, NotFoundException } from '@nestjs/common';
 import { InMemoryLogger } from '../../application/testing/in-memory-logger';
 import { ApiException } from './api.exception';
 import { HttpExceptionFilter } from './http-exception.filter';
@@ -47,6 +47,38 @@ describe('HttpExceptionFilter', () => {
 
     expect(status).toHaveBeenCalledWith(404);
     expect(json.mock.calls[0][0].code).toBe('NOT_FOUND');
+  });
+
+  it('그 외 HttpException(403, 5xx 미만)은 상태 코드를 보존하며 HTTP_ERROR로 매핑한다', () => {
+    const filter = new HttpExceptionFilter(new InMemoryLogger());
+    const { host, status, json } = makeHost();
+
+    filter.catch(new ForbiddenException('접근 권한이 없습니다'), host);
+
+    expect(status).toHaveBeenCalledWith(403);
+    expect(json.mock.calls[0][0].code).toBe('HTTP_ERROR');
+  });
+
+  it('그 외 HttpException(5xx)은 상태 코드를 보존하며 INTERNAL로 매핑한다', () => {
+    const filter = new HttpExceptionFilter(new InMemoryLogger());
+    const { host, status, json } = makeHost();
+
+    filter.catch(new HttpException('service unavailable', HttpStatus.SERVICE_UNAVAILABLE), host);
+
+    expect(status).toHaveBeenCalledWith(503);
+    expect(json.mock.calls[0][0].code).toBe('INTERNAL');
+  });
+
+  it('ValidationPipe 응답 본문이 객체가 아니면(message 필드 없음) exception.message를 details로 사용한다', () => {
+    const filter = new HttpExceptionFilter(new InMemoryLogger());
+    const { host, status, json } = makeHost();
+
+    filter.catch(new HttpException('plain string body', HttpStatus.BAD_REQUEST), host);
+
+    expect(status).toHaveBeenCalledWith(400);
+    const body = json.mock.calls[0][0];
+    expect(body.code).toBe('VALIDATION_FAILED');
+    expect(body.details).toEqual([{ reason: 'plain string body' }]);
   });
 
   it('예기치 못한 예외는 500 INTERNAL로 고정하고 내부 메시지를 응답에 노출하지 않으며 LoggerPort에 상세를 남긴다', () => {

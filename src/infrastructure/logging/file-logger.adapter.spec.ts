@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, unlinkSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { context, trace } from '@opentelemetry/api';
@@ -137,5 +137,24 @@ describe('FileLoggerAdapter', () => {
       message: 'should not throw',
       errorCode: 'X',
     })).not.toThrow();
+  });
+
+  it('logPath 미지정 시 기본값(logs.txt)으로 write stream을 연다', async () => {
+    const defaultLogPath = join(process.cwd(), 'logs.txt');
+    if (existsSync(defaultLogPath)) {
+      rmSync(defaultLogPath);
+    }
+
+    try {
+      const logger = new FileLoggerAdapter();
+      logger.log({ type: 'error', level: 'error', source: 'http', message: 'default path', errorCode: 'X' });
+      const content = await waitForContent(defaultLogPath);
+
+      expect(JSON.parse(content.trim()).message).toBe('default path');
+    } finally {
+      if (existsSync(defaultLogPath)) {
+        unlinkSync(defaultLogPath);
+      }
+    }
   });
 });

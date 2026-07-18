@@ -262,4 +262,20 @@ describe('JsonDbJobRepository', () => {
       expect(lockEvents).toHaveLength(0);
     });
   });
+
+  describe('직렬화 큐 오류 격리', () => {
+    it('한 작업이 실패해도 큐가 멈추지 않고 다음 작업이 정상 실행된다', async () => {
+      const repo = new JsonDbJobRepository(dbPath);
+      await repo.create({ title: 'seed', description: 'd' });
+
+      const db = (repo as unknown as { db: { getData: (path: string) => Promise<unknown> } }).db;
+      const getDataSpy = jest.spyOn(db, 'getData').mockRejectedValueOnce(new Error('disk read failed'));
+
+      await expect(repo.findById('any-id')).rejects.toThrow('disk read failed');
+      getDataSpy.mockRestore();
+
+      const jobs = await repo.list();
+      expect(jobs).toHaveLength(1);
+    });
+  });
 });
