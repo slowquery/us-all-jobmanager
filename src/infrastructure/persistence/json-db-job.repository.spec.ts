@@ -181,45 +181,9 @@ describe('JsonDbJobRepository', () => {
       }
     });
 
-    it('동시 PATCH 경쟁(동일 target)에서도 큐 직렬화 덕분에 retryCount가 중복 증가하지 않는다(02 race 시나리오 회귀)', async () => {
-      const seeded = makeJob({ status: 'failed', retryCount: 0 });
-      writeFileSync(dbPath, JSON.stringify({ jobs: [seeded] }));
-      const repo = new JsonDbJobRepository(dbPath);
-
-      const [first, second] = await Promise.all([
-        repo.withTransition(seeded.id, 'pending'),
-        repo.withTransition(seeded.id, 'pending'),
-      ]);
-
-      // 둘 다 큐를 거쳐 순차 실행되므로 각자 재조회한 상태를 기준으로 응답한다: 첫 번째는
-      // failed→pending 전이(성공), 두 번째는 재조회 시 이미 pending이라 field-only 단축 경로를
-      // 탄다(S2 포트 계약: target===현재 status면 guard 생략). 두 경로 모두 ok:true이지만
-      // retryCount는 failed→pending 전이 시에만 증가하므로 중복 증가가 없다(무손실 검증 핵심).
-      expect(first.ok).toBe(true);
-      expect(second.ok).toBe(true);
-
-      const final = await repo.findById(seeded.id);
-      expect(final?.status).toBe('pending');
-      expect(final?.retryCount).toBe(1);
-    });
-
-    it('PATCH↔스케줄러 배치 경쟁에서도 guard-in-lock이 무효 전이를 항상 거부한다(02 race 시나리오 회귀)', async () => {
-      const seeded = makeJob({ status: 'processing', retryCount: 0 });
-      writeFileSync(dbPath, JSON.stringify({ jobs: [seeded] }));
-      const repo = new JsonDbJobRepository(dbPath);
-
-      // processing → pending은 전이 표에 없어 순서와 무관하게 항상 거부되어야 한다.
-      const [invalidPatch, schedulerComplete] = await Promise.all([
-        repo.withTransition(seeded.id, 'pending'),
-        repo.withTransition(seeded.id, 'completed'),
-      ]);
-
-      expect(invalidPatch).toEqual({ ok: false, reason: 'INVALID_TRANSITION' });
-      expect(schedulerComplete.ok).toBe(true);
-
-      const final = await repo.findById(seeded.id);
-      expect(final?.status).toBe('completed');
-    });
+    // 동시 PATCH(동일 target)·PATCH↔스케줄러 배치의 02 race 시나리오 회귀 테스트는
+    // test/concurrency/regression.spec.ts로 이동했다(08 "동시성 회귀 테스트" 절, S7 정리 —
+    // 이 파일과의 중복을 피하고 08이 요구하는 e2e 수준 배치로 통합).
   });
 
   describe('withBatch', () => {
