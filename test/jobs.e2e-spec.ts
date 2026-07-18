@@ -249,6 +249,17 @@ describe('Jobs API (e2e)', () => {
       expect(response.body.code).toBe('VALIDATION_FAILED');
     });
 
+    it('DTO에 없는 필드(atLeastOneField 포함)를 보내면 whitelist 위반으로 400을 반환한다', async () => {
+      const created = await request(app.getHttpServer()).post('/jobs').send({ title: 'x', description: 'd' }).expect(201);
+
+      const response = await request(app.getHttpServer())
+        .patch(`/jobs/${created.body.id}`)
+        .send({ title: 'new', atLeastOneField: 'injected' })
+        .expect(400);
+
+      expect(response.body.code).toBe('VALIDATION_FAILED');
+    });
+
     it('재시도 전이 성공 시 같은 요청 내 http_request/transition 로그가 동일 traceId(32-hex)를 공유한다', async () => {
       const seeded = seededRetrySuccess;
 

@@ -21,15 +21,16 @@ export class ApiErrorDetailDto {
  */
 export class ApiErrorResponseDto {
   @ApiProperty({
-    description: '에러 코드',
-    example: 'VALIDATION_FAILED',
-    examples: [
+    description: '에러 코드(머신 판별용)',
+    enum: [
       'VALIDATION_FAILED',
       'NOT_FOUND',
       'INVALID_TRANSITION',
       'RETRY_LIMIT_EXCEEDED',
+      'HTTP_ERROR',
       'INTERNAL',
     ],
+    example: 'VALIDATION_FAILED',
   })
   code!: string;
 

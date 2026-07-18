@@ -37,7 +37,8 @@ describe('모듈 분리 배선', () => {
     // export된 토큰이라 루트에서 조회되고, 오버라이드가 그대로 반영된다.
     expect(moduleRef.get(JOB_REPOSITORY)).toBe(repository);
     expect(moduleRef.get(LOGGER_PORT)).toBeInstanceOf(InMemoryLogger);
-    expect(moduleRef.get(JOB_PROCESSOR)).toBeDefined();
+    // JOB_PROCESSOR는 스케줄러 전용이라 InfrastructureModule에서는 제공하지 않는다.
+    expect(() => moduleRef.get(JOB_PROCESSOR)).toThrow();
   });
 
   it('HttpModule 단독으로도 InfrastructureModule을 통해 컨트롤러를 해결한다', async () => {

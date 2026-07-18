@@ -70,7 +70,11 @@ describe('Swagger(OpenAPI) 문서', () => {
     expect(at().components.schemas.JobResponseDto.properties.title.example).toBe('배포 파이프라인 실행');
   });
 
-  it('PatchJobDto의 합성 프로퍼티 atLeastOneField는 문서에서 숨긴다', () => {
-    expect(Object.keys(at().components.schemas.PatchJobDto.properties)).not.toContain('atLeastOneField');
+  it('PatchJobDto 스키마는 실제 필드(title/description/status)만 노출한다', () => {
+    expect(Object.keys(at().components.schemas.PatchJobDto.properties).sort()).toEqual([
+      'description',
+      'status',
+      'title',
+    ]);
   });
 });

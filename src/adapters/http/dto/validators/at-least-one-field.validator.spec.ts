@@ -1,11 +1,11 @@
 import { validate } from 'class-validator';
 import { AtLeastOneField } from './at-least-one-field.validator';
 
+@AtLeastOneField([
+  'a',
+  'b',
+])
 class Sample {
-  @AtLeastOneField([
-    'a',
-    'b',
-  ])
   a?: string;
 
   b?: string;
