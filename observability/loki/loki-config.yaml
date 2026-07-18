@@ -1,0 +1,33 @@
+# 최소 구성 — 단일 프로세스, 파일시스템 스토리지(로컬 docker-compose 전용, 운영 구성 아님).
+
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+
+common:
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    - from: 2024-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+limits_config:
+  allow_structured_metadata: false
+
+ruler:
+  alertmanager_url: http://localhost:9093

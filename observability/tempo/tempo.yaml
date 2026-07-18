@@ -1,0 +1,31 @@
+# 최소 구성 — OTLP/HTTP(4318)로 스팬을 수신해 로컬 파일시스템에 저장한다.
+# 06-observability-design.md: app의 OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4318 이 이 리시버를 향한다.
+
+server:
+  http_listen_port: 3200
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        http:
+          endpoint: 0.0.0.0:4318
+        grpc:
+          endpoint: 0.0.0.0:4317
+
+ingester:
+  trace_idle_period: 10s
+  max_block_bytes: 1_000_000
+  max_block_duration: 5m
+
+compactor:
+  compaction:
+    block_retention: 1h
+
+storage:
+  trace:
+    backend: local
+    local:
+      path: /var/tempo/traces
+    wal:
+      path: /var/tempo/wal
