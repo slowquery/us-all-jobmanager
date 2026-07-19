@@ -54,6 +54,23 @@ docker compose -f observability/docker-compose.yml up -d --build
    tick 루트 스팬 → job 자식 스팬)가 열리는지 확인한다. 이 왕복이 성공하면 로그↔트레이스 상관
    (06 확정 사항)이 실제로 동작함을 실증한 것이다.
 
+## SLO · 평균 Latency 대시보드 (엔드포인트별 P50/P99)
+
+`grafana/provisioning/dashboards/`에 대시보드 2종을 추가로 프로비저닝한다(`dashboards.yaml` 디렉토리 스캔으로 자동 로드, 무설정 추가):
+
+- **UsAllJobManager SLO (엔드포인트별 P50/P99)** (`us-all-job-manager-slo.json`, uid `usalljob-slo`) — 엔드포인트별 P50/P99 Latency, 요청수(정규화 검증), 에러율(`or vector(0)`), 가용성, 전체 요약.
+- **UsAllJobManager 평균 Latency** (`us-all-job-manager-avg-latency.json`, uid `usalljob-avg-latency`) — 전체/엔드포인트별 평균, 처리량, 평균 vs P50 괴리.
+
+per-endpoint 그룹핑은 Loki `label_format` 정규화(`path`→라우트 6종 + `unmatched`(404 전용), 락 이벤트는 `method != ""`로 제외)로 수행한다 — 애플리케이션 소스 무침투. `regexReplaceAll`은 인자형만 사용한다(파이프형 미동작, grafana/loki#10176).
+
+데이터를 채우려면 트래픽 생성기를 사용한다(엔드포인트당 ≥120 샘플 + 404/400 에러 주입 + `scheduler.process-job` 자식 스팬용 pending 잔류):
+
+```bash
+bash scripts/observability-traffic.sh 120   # 기본 120라운드
+```
+
+> Grafana **Explore**(Tempo 트레이스/Loki 로그 조회)는 익명 뷰어 권한으로는 홈으로 리다이렉트되므로 `admin`/`admin`으로 접근한다. 검증 결과·스크린샷·문제 해결 기록은 [`../logs/20260719/observability-verification/`](../logs/20260719/observability-verification/) 참조.
+
 ## 종료
 
 ```bash

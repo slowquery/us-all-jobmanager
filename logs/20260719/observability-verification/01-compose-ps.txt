@@ -1,0 +1,13 @@
+# docker compose ps  (2026-07-19 16:00:10 KST)
+NAME                      IMAGE                    COMMAND                  SERVICE   CREATED          STATUS          PORTS
+observability-alloy-1     grafana/alloy:v1.5.1     "/bin/alloy run --se…"   alloy     17 minutes ago   Up 17 minutes   
+observability-app-1       observability-app        "docker-entrypoint.s…"   app       17 minutes ago   Up 17 minutes   0.0.0.0:8080->3000/tcp, [::]:8080->3000/tcp
+observability-grafana-1   grafana/grafana:11.3.0   "/run.sh"                grafana   17 minutes ago   Up 17 minutes   0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp
+observability-loki-1      grafana/loki:3.2.1       "/usr/bin/loki -conf…"   loki      17 minutes ago   Up 17 minutes   3100/tcp
+observability-tempo-1     grafana/tempo:2.6.1      "/tempo -config.file…"   tempo     17 minutes ago   Up 17 minutes   
+
+# 헬스체크
+app     GET http://localhost:8080/jobs  -> 200
+grafana GET http://localhost:3000/api/health -> 200
+loki    /ready (internal) -> ready
+tempo   /ready (internal via app) -> Ingester not ready: ingester check ready failed: waiting for 15s after being ready

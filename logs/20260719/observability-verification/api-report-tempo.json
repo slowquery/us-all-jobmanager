@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "kind": "api-test-report",
+  "surface": "api",
+  "target": "Grafana Tempo datasource proxy (uid=tempo) /api/search + /api/traces",
+  "generatedAt": "2026-07-19T07:59:32Z",
+  "cases": [
+    {
+      "name": "AC4-a GET /jobs HTTP 트레이스",
+      "result": {
+        "count": 8
+      },
+      "pass": true
+    },
+    {
+      "name": "AC4-b scheduler.tick 루트",
+      "result": {
+        "count": 8
+      },
+      "pass": true
+    },
+    {
+      "name": "AC4-b scheduler.tick→process-job 트리",
+      "result": {
+        "traceID": "ba16e81e84db96fc9083b75c89cb2d3b",
+        "spanNames": {
+          "scheduler.process-job": 2,
+          "scheduler.tick": 1
+        }
+      },
+      "pass": true
+    }
+  ],
+  "pass": true
+}

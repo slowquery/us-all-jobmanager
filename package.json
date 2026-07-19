@@ -1,6 +1,6 @@
 {
   "name": "us-all-job-manager",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "NestJS based scheduler server",
   "main": "src/main.ts",
   "license": "UNLICENSED",

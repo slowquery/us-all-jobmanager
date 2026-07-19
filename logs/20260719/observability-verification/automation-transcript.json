@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "tool": "gjc-builtin-browser",
+  "engine": "chromium-headless",
+  "target": "http://localhost:3000",
+  "auth": "admin/admin basic auth (anonymous viewer lacks Explore access)",
+  "actions": [
+    {
+      "type": "open",
+      "timestamp": "2026-07-19T16:20:00Z",
+      "surface": "web",
+      "tab": "grafana",
+      "viewport": "1600x2200",
+      "selector": "tab:grafana"
+    },
+    {
+      "type": "authenticate",
+      "timestamp": "2026-07-19T16:20:05Z",
+      "surface": "web",
+      "user": "admin",
+      "selector": "page"
+    },
+    {
+      "type": "goto",
+      "timestamp": "2026-07-19T16:20:10Z",
+      "surface": "web",
+      "url": "http://localhost:3000/d/usalljob-slo/97510a1?from=now-1h&to=now&kiosk&refresh=",
+      "waitUntil": "domcontentloaded",
+      "selector": "page"
+    },
+    {
+      "type": "scroll",
+      "timestamp": "2026-07-19T16:20:15Z",
+      "surface": "web",
+      "container": ".scrollbar-view",
+      "range": "0..2200",
+      "selector": ".scrollbar-view"
+    },
+    {
+      "type": "evaluate",
+      "timestamp": "2026-07-19T16:20:20Z",
+      "surface": "web",
+      "assert": "react-grid-item=6, No data=0",
+      "selector": "document"
+    },
+    {
+      "type": "screenshot",
+      "timestamp": "2026-07-19T16:20:25Z",
+      "surface": "web",
+      "file": "02-slo-dashboard-full.png",
+      "observed": "요청수 6행, 가용성 100%, P50 0ms/P99 2ms, 에러율 25%",
+      "selector": "body"
+    },
+    {
+      "type": "goto",
+      "timestamp": "2026-07-19T16:20:30Z",
+      "surface": "web",
+      "url": "http://localhost:3000/d/usalljob-avg-latency/?from=now-1h&to=now&kiosk&refresh=",
+      "selector": "page"
+    },
+    {
+      "type": "screenshot",
+      "timestamp": "2026-07-19T16:20:35Z",
+      "surface": "web",
+      "file": "06-avg-latency-dashboard.png",
+      "observed": "전체평균 단일 시리즈, 엔드포인트별 평균, 처리량, 평균 vs P50",
+      "selector": "body"
+    },
+    {
+      "type": "goto",
+      "timestamp": "2026-07-19T16:20:40Z",
+      "surface": "web",
+      "url": "http://localhost:3000/explore?panes=tempo:7c463668fefa13c35639f7ad576d8df",
+      "selector": "page"
+    },
+    {
+      "type": "screenshot",
+      "timestamp": "2026-07-19T16:20:45Z",
+      "surface": "web",
+      "file": "08-tempo-scheduler-tick.png",
+      "observed": "scheduler.tick(2.34ms) + scheduler.process-job 자식 10개, 11 spans",
+      "selector": "body"
+    },
+    {
+      "type": "goto",
+      "timestamp": "2026-07-19T16:20:50Z",
+      "surface": "web",
+      "url": "http://localhost:3000/explore?panes=tempo:6a6508bd27946d68e5828b574c20251",
+      "selector": "page"
+    },
+    {
+      "type": "screenshot",
+      "timestamp": "2026-07-19T16:20:55Z",
+      "surface": "web",
+      "file": "07-tempo-http-get-jobs.png",
+      "observed": "GET /jobs 85.6µs 단일 스팬",
+      "selector": "body"
+    },
+    {
+      "type": "goto",
+      "timestamp": "2026-07-19T16:21:00Z",
+      "surface": "web",
+      "url": "http://localhost:3000/explore?panes=loki:{source=http,level=error}|json",
+      "selector": "page"
+    },
+    {
+      "type": "screenshot",
+      "timestamp": "2026-07-19T16:21:05Z",
+      "surface": "web",
+      "file": "11-loki-error-logs.png",
+      "observed": "level=error 404 NOT_FOUND / 400 VALIDATION_FAILED, error total 240",
+      "selector": "body"
+    },
+    {
+      "type": "goto",
+      "timestamp": "2026-07-19T16:21:10Z",
+      "surface": "web",
+      "url": "http://localhost:3000/explore?panes=loki:{source=http}|json",
+      "selector": "page"
+    },
+    {
+      "type": "click",
+      "timestamp": "2026-07-19T16:21:15Z",
+      "surface": "web",
+      "target": "first log row",
+      "result": "traceId 23ebaf... 필드 + derived field 'Tempo에서 보기' 링크",
+      "selector": ".logs-row__message"
+    },
+    {
+      "type": "screenshot",
+      "timestamp": "2026-07-19T16:21:20Z",
+      "surface": "web",
+      "file": "09-loki-to-tempo-derived-field.png",
+      "observed": "Links: traceId → Tempo에서 보기",
+      "selector": "body"
+    }
+  ]
+}
