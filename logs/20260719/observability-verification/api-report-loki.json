@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "kind": "api-test-report",
+  "surface": "api",
+  "target": "Grafana Loki datasource proxy (uid=loki) /api/v1/query",
+  "generatedAt": "2026-07-19T07:59:32Z",
+  "cases": [
+    {
+      "name": "AC5 6 HTTP 메서드 로그",
+      "result": {
+        "methods": {
+          "DELETE": 154,
+          "GET": 610,
+          "PATCH": 151,
+          "POST": 317
+        }
+      },
+      "pass": true
+    },
+    {
+      "name": "AC5 level=error(404 NOT_FOUND/400 VALIDATION_FAILED)",
+      "result": {
+        "errorCodes": {
+          "NOT_FOUND": 153,
+          "VALIDATION_FAILED": 151
+        }
+      },
+      "pass": true
+    }
+  ],
+  "pass": true
+}

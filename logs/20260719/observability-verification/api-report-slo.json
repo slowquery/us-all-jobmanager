@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "kind": "api-test-report",
+  "surface": "api",
+  "target": "Grafana Loki datasource proxy (uid=loki) /api/v1/query",
+  "generatedAt": "2026-07-19T07:59:32Z",
+  "cases": [
+    {
+      "name": "AC2a per-endpoint 요청수 정규화(정확히 6행)",
+      "result": {
+        "rows": 6,
+        "counts": {
+          "DELETE /jobs/:id": 154,
+          "GET /jobs": 154,
+          "GET /jobs/:id": 152,
+          "GET /jobs/search": 151,
+          "PATCH /jobs/:id": 151,
+          "POST /jobs": 317
+        }
+      },
+      "pass": true
+    },
+    {
+      "name": "AC2b 엔드포인트당 ≥100 샘플",
+      "result": {
+        "min": 151
+      },
+      "pass": true
+    },
+    {
+      "name": "AC2a per-endpoint P50/P99 산출(6·6)",
+      "result": {
+        "p50": {
+          "DELETE /jobs/:id": 1.0,
+          "GET /jobs": 0.0,
+          "GET /jobs/:id": 0.0,
+          "GET /jobs/search": 0.0,
+          "PATCH /jobs/:id": 1.0,
+          "POST /jobs": 0.0
+        },
+        "p99": {
+          "DELETE /jobs/:id": 1.0,
+          "GET /jobs": 1.0,
+          "GET /jobs/:id": 1.0,
+          "GET /jobs/search": 1.0,
+          "PATCH /jobs/:id": 3.0,
+          "POST /jobs": 2.84
+        }
+      },
+      "pass": true
+    },
+    {
+      "name": "AC6 에러율(요청 라인 분모)",
+      "result": {
+        "series": 1,
+        "value": 0.2468
+      },
+      "pass": true
+    },
+    {
+      "name": "AC6 가용성(비-5xx)==1",
+      "result": {
+        "value": 1.0
+      },
+      "pass": true
+    }
+  ],
+  "pass": true
+}

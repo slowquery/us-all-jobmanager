@@ -1,0 +1,242 @@
+{
+  "id": null,
+  "uid": "usalljob-avg-latency",
+  "title": "UsAllJobManager 평균 Latency",
+  "description": "평균 Latency 대시보드 — 전체/엔드포인트별 avg_over_time, 처리량, 평균 vs P50 괴리. 소스는 Loki HTTP 요청 로그(latencyMs).",
+  "tags": [
+    "us-all-job-manager",
+    "observability",
+    "latency"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "전체 평균 Latency",
+      "description": "전 엔드포인트 합산 5분 창 평균 Latency. `method != \"\"`로 http_request 라인만(lock/transition 제외), `by ()`로 level 스트림을 단일 그룹 병합 → 진짜 전체 평균 1개 시리즈.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "avg_over_time({source=\"http\"} | json method, latencyMs | method != \"\" | unwrap latencyMs [5m]) by ()",
+          "editorMode": "code",
+          "queryType": "range",
+          "legendFormat": "전체 평균"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "max",
+            "mean"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "엔드포인트별 평균 Latency",
+      "description": "엔드포인트 6종별 5분 창 평균 Latency. 정규화 체인은 SLO 대시보드와 동일.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "avg_over_time({source=\"http\"} | json method, path, statusCode, latencyMs | label_format path_stripped=`{{ regexReplaceAll \"\\\\?.*$\" .path \"\" }}` | label_format route=`{{ if eq .statusCode \"404\" }}unmatched{{ else if eq .path_stripped \"/jobs\" }}/jobs{{ else if eq .path_stripped \"/jobs/search\" }}/jobs/search{{ else }}/jobs/:id{{ end }}` | label_format endpoint=`{{ .method }} {{ .route }}` | method != \"\" | route != \"unmatched\" | unwrap latencyMs [5m]) by (endpoint)",
+          "editorMode": "code",
+          "queryType": "range",
+          "legendFormat": "{{endpoint}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "max",
+            "mean"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "처리량 (req/s)",
+      "description": "HTTP 요청 처리량(5분 창 rate 합). `method != \"\"`로 http_request 라인만 집계(lock/transition/delete 이벤트 제외 — 미필터 시 처리량 과대).",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "sum(rate({source=\"http\"} | json method | method != \"\" [5m]))",
+          "editorMode": "code",
+          "queryType": "range",
+          "legendFormat": "req/s"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "max",
+            "mean"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "평균 vs P50 괴리",
+      "description": "전체 평균과 P50의 괴리(꼬리 지연 영향 판단용). 평균이 P50보다 크게 높으면 소수 느린 요청의 영향이 크다는 신호. 두 시리즈 모두 http_request 라인만·단일 그룹(by ()).",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "avg_over_time({source=\"http\"} | json method, latencyMs | method != \"\" | unwrap latencyMs [5m]) by ()",
+          "editorMode": "code",
+          "queryType": "range",
+          "legendFormat": "평균"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "quantile_over_time(0.50, {source=\"http\"} | json method, latencyMs | method != \"\" | unwrap latencyMs [5m]) by ()",
+          "editorMode": "code",
+          "queryType": "range",
+          "legendFormat": "P50"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "max",
+            "mean"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,412 @@
+{
+  "id": null,
+  "uid": "usalljob-slo",
+  "title": "UsAllJobManager SLO (엔드포인트별 P50/P99)",
+  "description": "SLO 지표 대시보드 — 엔드포인트별 P50/P99 Latency, 요청수(정규화 검증), 에러율, 가용성, 전체 요약. 소스는 Loki HTTP 요청 로그(latencyMs). per-endpoint 정규화는 LogQL label_format(옵션 A, 404→unmatched, lock 이벤트는 method!=\"\"로 제외)로 수행한다 — 애플리케이션 소스 무침투.",
+  "tags": [
+    "us-all-job-manager",
+    "observability",
+    "slo"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "엔드포인트별 P50 Latency",
+      "description": "HTTP 요청 로그(latencyMs)의 5분 창 P50. 정규화 체인으로 엔드포인트 6종 그룹핑(method!=\"\"로 lock 이벤트 제외, route!=unmatched로 404 제외).",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "quantile_over_time(0.50, {source=\"http\"} | json method, path, statusCode, latencyMs | label_format path_stripped=`{{ regexReplaceAll \"\\\\?.*$\" .path \"\" }}` | label_format route=`{{ if eq .statusCode \"404\" }}unmatched{{ else if eq .path_stripped \"/jobs\" }}/jobs{{ else if eq .path_stripped \"/jobs/search\" }}/jobs/search{{ else }}/jobs/:id{{ end }}` | label_format endpoint=`{{ .method }} {{ .route }}` | method != \"\" | route != \"unmatched\" | unwrap latencyMs [5m]) by (endpoint)",
+          "editorMode": "code",
+          "queryType": "range",
+          "legendFormat": "{{endpoint}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "max",
+            "mean"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "엔드포인트별 P99 Latency",
+      "description": "HTTP 요청 로그(latencyMs)의 5분 창 P99. P99 통계 유효성을 위해 엔드포인트당 ≥100 샘플 확보(트래픽 스크립트 120라운드).",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "quantile_over_time(0.99, {source=\"http\"} | json method, path, statusCode, latencyMs | label_format path_stripped=`{{ regexReplaceAll \"\\\\?.*$\" .path \"\" }}` | label_format route=`{{ if eq .statusCode \"404\" }}unmatched{{ else if eq .path_stripped \"/jobs\" }}/jobs{{ else if eq .path_stripped \"/jobs/search\" }}/jobs/search{{ else }}/jobs/:id{{ end }}` | label_format endpoint=`{{ .method }} {{ .route }}` | method != \"\" | route != \"unmatched\" | unwrap latencyMs [5m]) by (endpoint)",
+          "editorMode": "code",
+          "queryType": "range",
+          "legendFormat": "{{endpoint}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "max",
+            "mean"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "엔드포인트별 요청수 (정규화 검증 · 1차 증거)",
+      "description": "1시간 창 엔드포인트별 요청수. 정규 엔드포인트 행이 정확히 6개(POST/GET/GET search/GET :id/PATCH/DELETE)여야 정규화가 올바름을 증명한다. 404는 unmatched로 분리(패널 4·아래 에러율에서 증명).",
+      "type": "table",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "요청수"
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "sum by (endpoint) (count_over_time({source=\"http\"} | json method, path, statusCode, latencyMs | label_format path_stripped=`{{ regexReplaceAll \"\\\\?.*$\" .path \"\" }}` | label_format route=`{{ if eq .statusCode \"404\" }}unmatched{{ else if eq .path_stripped \"/jobs\" }}/jobs{{ else if eq .path_stripped \"/jobs/search\" }}/jobs/search{{ else }}/jobs/:id{{ end }}` | label_format endpoint=`{{ .method }} {{ .route }}` | method != \"\" | route != \"unmatched\" [1h]))",
+          "editorMode": "code",
+          "queryType": "instant",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    },
+    {
+      "id": 4,
+      "title": "에러율 SLO (level=error 비율)",
+      "description": "level=error(4xx: 404/400/409) 라인 / 전체 HTTP 요청 라인 비율. 분자·분모 모두 `method != \"\"`로 http_request 라인만 집계(lock/transition/delete 이벤트 제외 — 미필터 시 에러율이 희석되거나 5xx 시 분자가 중복 집계된다). 분자에 `or vector(0)`를 부가해 에러 0건 구간에서도 0%로 그려진다(No data 방지). 4xx 포함 정의라 5xx만 보는 가용성(패널 5)과 값이 다르다.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.01
+              }
+            ]
+          },
+          "custom": {
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "(sum(rate({source=\"http\", level=\"error\"} | json method | method != \"\" [5m])) or vector(0)) / sum(rate({source=\"http\"} | json method | method != \"\" [5m]))",
+          "editorMode": "code",
+          "queryType": "range",
+          "legendFormat": "에러율"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "max",
+            "mean"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "가용성 SLO (비-5xx 비율)",
+      "description": "비-5xx 응답 비율(1시간). 현재 앱에는 의도적 5xx 경로가 없어(404/409/400만 존재) 100%가 기대값이며, 5xx 검출 능력은 본 검증 세션에서 미검증(한계). 에러율(패널 4)은 4xx를 포함하므로 별개다.",
+      "type": "stat",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 16
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.99
+              },
+              {
+                "color": "green",
+                "value": 0.999
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "가용성"
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "sum(count_over_time({source=\"http\"} | json statusCode | statusCode != \"\" | statusCode < 500 [1h])) / sum(count_over_time({source=\"http\"} | json statusCode | statusCode != \"\" [1h]))",
+          "editorMode": "code",
+          "queryType": "instant",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name"
+      }
+    },
+    {
+      "id": 6,
+      "title": "전체 Latency P50 / P99 요약",
+      "description": "선택 시간범위 전체(전 엔드포인트 합산) P50·P99 요약. `method != \"\"`로 http_request 라인만, `by ()`로 level 스트림(info/error)을 단일 그룹으로 병합해 대표 스칼라 1개씩만 표시한다.",
+      "type": "stat",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 18,
+        "x": 6,
+        "y": 16
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "P50"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "P99"
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "quantile_over_time(0.50, {source=\"http\"} | json method, latencyMs | method != \"\" | unwrap latencyMs [$__range]) by ()",
+          "editorMode": "code",
+          "queryType": "instant",
+          "instant": true,
+          "range": false
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "quantile_over_time(0.99, {source=\"http\"} | json method, latencyMs | method != \"\" | unwrap latencyMs [$__range]) by ()",
+          "editorMode": "code",
+          "queryType": "instant",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value_and_name"
+      }
+    }
+  ]
+}

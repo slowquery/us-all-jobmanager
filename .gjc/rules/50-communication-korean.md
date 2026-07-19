@@ -1,10 +1,11 @@
 ---
-description: User-facing proposals, suggestions, and recommendations are written in Korean.
+description: Agent working/communication language and user-facing proposals are Korean by default.
 alwaysApply: true
 ---
 
-# Rule 9 — Korean-language proposals
+# Rule 9 — Korean-language communication
 
+- **에이전트의 사용자 대상 진행 언어는 기본 한국어(한국어)다**: 작업 설명·질문·중간 보고·요약·리뷰 코멘트·최종 답변을 한국어로 작성한다. 코드/식별자/경로/URL/로그 키·명령어는 기존 컨벤션의 영문을 허용한다.
 - Write all user-facing proposals / suggestions / recommendations in Korean (한국어).
 - Implementation code, identifiers, commit messages, and file content follow existing
   conventions; this rule governs proposal/communication prose to the user. **단, 결정 로그
