@@ -1,73 +1,66 @@
-# QA/Red-Team Report — news-digest job (concurrency-demo-job)
+# QA/레드팀 리포트 — 뉴스 다이제스트 job (concurrency-demo-job)
 
-- Date: 2026-07-18
-- Worktree: `~/Project/UsAllJobManager.worktrees/20260718-concurrency-demo-job` (branch `feat/news-digest-job`)
-- Scope: adversarial verification of NewsDigestJobProcessor no-throw contract, timeout bounding,
-  dedupe/idempotency, DispatchingJobProcessor network isolation, use-case per-job safety net,
-  and config secret gating. Fakes/doubles only — no real network calls.
-- Constraint compliance: existing test files were **not modified**; only new
-  `*.adversarial.spec.ts` files were added under `src/**`. No product source (non-test `src`),
-  `package.json`, `.gjc`, or main checkout were touched.
+- 일자: 2026-07-18 (초기 키워드 구현 QA — 이후 주제별 그룹 요약 전환은 247 테스트로 별도 재검증됨)
+- 워크트리: `~/Project/UsAllJobManager.worktrees/20260718-concurrency-demo-job` (브랜치 `feat/news-digest-job`)
+- 범위: `NewsDigestJobProcessor`의 no-throw 계약, timeout 유계성, dedupe/idempotency, `DispatchingJobProcessor`
+  네트워크 격리, 유스케이스 per-job 안전망, config 비밀 게이팅에 대한 적대적(adversarial) 검증. fake/더블만 사용 —
+  실제 네트워크 호출 없음.
+- 제약 준수: 기존 테스트 파일은 **수정하지 않음**. `src/**` 아래 신규 `*.adversarial.spec.ts`만 추가. 제품 소스(비-테스트
+  `src`)·`package.json`·`.gjc`·메인 체크아웃은 건드리지 않음.
 
-## Verdict: PASSED
+## 판정: 통과(PASSED)
 
-All existing suites remain green and every adversarial case behaved per contract. No product
-defects were found; the implementation withstood every attempted break.
+기존 스위트 전부 green 유지, 모든 적대적 케이스가 계약대로 동작. 제품 결함 없음 — 시도한 모든 파괴에 구현이 버팀.
 
-## Commands run (verbatim) and results
+## 실행 명령과 결과
 
-| Command | Result |
+| 명령 | 결과 |
 |---|---|
-| `corepack yarn test` | **PASS** — Test Suites: 40 passed, 40 total; Tests: 207 passed, 207 total (188 pre-existing + 19 new adversarial) |
-| `corepack yarn test:e2e` | **PASS** — Test Suites: 1 passed, 1 total; Tests: 18 passed, 18 total (unchanged, regression-clean) |
-| `corepack yarn test:cov` | **PASS** — coverage gate held: global statements 98.47%, branches 95.31%, functions 93.89%, lines 98.74% (all ≥ configured thresholds 97/86/92/98); `src/domain` at 100/100/100/100 |
+| `corepack yarn test` | **PASS** — 스위트 40/40, 테스트 207/207 (기존 188 + 신규 적대적 19) |
+| `corepack yarn test:e2e` | **PASS** — 스위트 1/1, 테스트 18/18 (무변경, 회귀 없음) |
+| `corepack yarn test:cov` | **PASS** — 커버리지 게이트 유지: 전역 statements 98.47% / branches 95.31% / functions 93.89% / lines 98.74% (임계 97/86/92/98 모두 충족), `src/domain` 100/100/100/100 |
 
-## New adversarial spec files added
+## 추가한 적대적 스펙 파일
 
-| File | Purpose |
+| 파일 | 목적 |
 |---|---|
-| `src/infrastructure/news-digest/news-digest-job.processor.adversarial.spec.ts` | No-throw contract (sync throw / rejected promise / abort-reject / undefined logger / empty headlines), timeout bounding, dedupe/idempotency |
-| `src/application/ports/job-processor.strategy.adversarial.spec.ts` | DispatchingJobProcessor network isolation (mismatched/near-miss titles never hit the "network" fake) |
-| `src/application/use-cases/process-pending-jobs.use-case.adversarial.spec.ts` | Use-case per-job try/catch safety net (throwing processor doesn't block sibling jobs; multiple simultaneous throws) |
-| `src/infrastructure/config/news-digest.config.adversarial.spec.ts` | Config gating (`enabled` requires flag AND both secrets; each missing-secret combination) |
+| `news-digest-job.processor.adversarial.spec.ts` | no-throw 계약(동기 throw / rejected promise / abort-reject / logger undefined / 빈 입력), timeout 유계, dedupe/idempotency |
+| `job-processor.strategy.adversarial.spec.ts` | DispatchingJobProcessor 네트워크 격리(불일치/near-miss 제목은 네트워크 fake를 타지 않음) |
+| `process-pending-jobs.use-case.adversarial.spec.ts` | 유스케이스 per-job try/catch 안전망(throw하는 처리기가 형제 job을 막지 않음, 다중 동시 throw) |
+| `news-digest.config.adversarial.spec.ts` | config 게이팅(`enabled`는 플래그 + 두 비밀 모두 필요, 각 비밀 결핍 조합) |
 
-## Per-adversarial-case result table
+## 적대적 케이스별 결과표
 
-| # | Target | Adversarial case | Expected | Actual | Result |
+| # | 대상 | 적대적 케이스 | 기대 | 실제 | 결과 |
 |---|---|---|---|---|---|
-| 1a | No-throw contract | `NewsSource.fetchTodayHeadlines` throws synchronously | `process()` resolves `{outcome:'failed'}`, never rejects | Resolved `{outcome:'failed'}` | PASS |
-| 1b | No-throw contract | `KeywordSummarizer.summarizeKeywords` returns a rejected Promise | `process()` resolves `{outcome:'failed'}`, never rejects | Resolved `{outcome:'failed'}` | PASS |
-| 1c | No-throw contract | `SlackNotifier.notify` rejects because of abort (timeout race, `timeoutMs=20`) | `process()` resolves `{outcome:'failed'}`, never rejects | Resolved `{outcome:'failed'}` | PASS |
-| 1d | No-throw contract | Collaborator throws while `logger` is `undefined` | `process()` still resolves `{outcome:'failed'}` without throwing on `logger?.log` | Resolved `{outcome:'failed'}` | PASS |
-| 1e | No-throw contract | Empty headlines array (`[]`) | Mapped to `{outcome:'failed'}` with one `NEWS_DIGEST_FAILED` error log | Resolved `{outcome:'failed'}`, exactly 1 error log with `errorCode:'NEWS_DIGEST_FAILED'` | PASS |
-| 2 | Timeout bounding | Collaborator (`NewsSource`) hangs until `signal.aborted` fires, `timeoutMs=30` | Bounded termination — `failed` returned well within a small multiple of `timeoutMs` | Resolved `{outcome:'failed'}`; elapsed time `< timeoutMs*10` | PASS |
-| 3a | Dedupe/idempotency | Same `job.id` processed twice | 2nd call returns `completed` without calling `notifier` again | `notifyCallCount === 1` across both calls, both `completed` | PASS |
-| 3b | Dedupe/idempotency | Two distinct `job.id`s processed | Each is independent, `notifier` called once per job | `notifyCallCount === 2`, both `completed` | PASS |
-| 4a | Dispatcher isolation | Job title differs from sentinel (`'unrelated-title'`) | Matched (news/"network") processor never invoked; fallback invoked once | `matchedCalls()===0`, `fallbackCalls()===1` | PASS |
-| 4b | Dispatcher isolation | Job title exactly matches sentinel (`'news-digest'`) | Matched processor invoked once; fallback never invoked | `matchedCalls()===1`, `fallbackCalls()===0` | PASS |
-| 4c | Dispatcher isolation | Near-miss titles (case/whitespace/partial-match/empty string) | All route to fallback only, matched never called | `matchedCalls()===0` across all 5 near-miss variants; `fallbackCalls()===5` | PASS |
-| 5a | Use-case safety net | One of 3 seeded jobs' processor throws synchronously mid-batch | Only the throwing job ends `failed`; siblings end `completed`; exactly 1 `JOB_PROCESSOR_THREW` log; no jobs left stuck in `processing` | `succeeded:2`, `failed:1`, repo statuses matched exactly, 1 `JOB_PROCESSOR_THREW` log, 0 jobs stuck in `processing` | PASS |
-| 5b | Use-case safety net | 2 of 3 jobs fail (one rejected Promise, one sync throw), 1 succeeds | Batch resolves cleanly; 2 `failed`, 1 `succeeded`; 2 `JOB_PROCESSOR_THREW` logs | `succeeded:1`, `failed:2`, exactly 2 `JOB_PROCESSOR_THREW` logs | PASS |
-| 6a | Config gating | Flag `true`, Gemini key present, Slack webhook empty | `enabled=false` | `enabled===false` | PASS |
-| 6b | Config gating | Flag `true`, Slack webhook present, Gemini key empty | `enabled=false` | `enabled===false` | PASS |
-| 6c | Config gating | Flag `true`, both secrets whitespace-only strings | `enabled=false` (post-trim) | `enabled===false` | PASS |
-| 6d | Config gating | Flag absent/undefined, both secrets present | `enabled=false` (explicit opt-in required) | `enabled===false` | PASS |
-| 6e | Config gating (regression contrast) | Flag `'TRUE'` (case variant), both secrets present | `enabled=true` | `enabled===true` | PASS |
-| 6f | Config gating (regression contrast) | Flag `'true '` (trailing space), both secrets present | `enabled=true` | `enabled===true` | PASS |
-| 7 | Existing regression | C-1..C-5 concurrency specs + full e2e suite | All green, unmodified | 188 pre-existing unit/concurrency tests + 18 e2e tests all still pass | PASS |
+| 1a | no-throw | 뉴스 소스가 동기 throw | `process()`가 `{outcome:'failed'}` resolve, reject 없음 | 그대로 | PASS |
+| 1b | no-throw | 요약기가 rejected Promise 반환 | `{outcome:'failed'}` resolve | 그대로 | PASS |
+| 1c | no-throw | 알림기가 abort로 reject(timeout race, `timeoutMs=20`) | `{outcome:'failed'}` resolve | 그대로 | PASS |
+| 1d | no-throw | `logger`가 `undefined`인데 협력자 throw | `logger?.log`에서 안 터지고 `{outcome:'failed'}` | 그대로 | PASS |
+| 1e | no-throw | 빈 입력 배열(`[]`) | `{outcome:'failed'}` + `NEWS_DIGEST_FAILED` 에러 로그 1건 | 그대로, 에러 로그 정확히 1건 | PASS |
+| 2 | timeout 유계 | 협력자가 `signal.aborted`까지 무한 대기(`timeoutMs=30`) | `timeoutMs` 소수 배 이내 `failed` 유계 종료 | 경과시간 `< timeoutMs*10`, `failed` | PASS |
+| 3a | dedupe | 동일 `job.id` 2회 처리 | 2번째는 알림기 미호출 `completed` | `notifyCallCount===1`, 둘 다 `completed` | PASS |
+| 3b | dedupe | 서로 다른 `job.id` 2개 | 각각 독립, job당 알림 1회 | `notifyCallCount===2`, 둘 다 `completed` | PASS |
+| 4a | dispatcher 격리 | 제목이 sentinel과 다름 | 뉴스("네트워크") 처리기 미호출, fallback 1회 | `matched===0`, `fallback===1` | PASS |
+| 4b | dispatcher 격리 | 제목이 sentinel과 정확히 일치 | 뉴스 처리기 1회, fallback 미호출 | `matched===1`, `fallback===0` | PASS |
+| 4c | dispatcher 격리 | near-miss 제목(대소문자/공백/부분/빈) | 전부 fallback만, 뉴스 처리기 미호출 | 5변형 모두 `matched===0`, `fallback===5` | PASS |
+| 5a | 유스케이스 안전망 | 배치 3건 중 1건 처리기가 동기 throw | 해당 job만 `failed`, 형제는 `completed`, `JOB_PROCESSOR_THREW` 1건, processing 고착 0 | `succeeded:2`, `failed:1`, 로그 1건, 고착 0 | PASS |
+| 5b | 유스케이스 안전망 | 3건 중 2건 실패(rejected+sync throw), 1건 성공 | 2 `failed`, 1 `succeeded`, `JOB_PROCESSOR_THREW` 2건 | 그대로 | PASS |
+| 6a | config 게이팅 | 플래그 true, Gemini key 있음, Slack webhook 없음 | `enabled=false` | `false` | PASS |
+| 6b | config 게이팅 | 플래그 true, Slack webhook 있음, Gemini key 없음 | `enabled=false` | `false` | PASS |
+| 6c | config 게이팅 | 플래그 true, 두 비밀 공백만 | `enabled=false`(trim 후) | `false` | PASS |
+| 6d | config 게이팅 | 플래그 없음, 두 비밀 있음 | `enabled=false`(명시적 opt-in 필요) | `false` | PASS |
+| 6e | config 게이팅(대조) | 플래그 `'TRUE'`(대소문자), 두 비밀 있음 | `enabled=true` | `true` | PASS |
+| 6f | config 게이팅(대조) | 플래그 `'true '`(후행 공백), 두 비밀 있음 | `enabled=true` | `true` | PASS |
+| 7 | 기존 회귀 | C-1~C-5 동시성 + 전체 e2e | 전부 green, 무변경 | 기존 188 유닛·동시성 + 18 e2e 모두 통과 | PASS |
 
-## Findings
+## 발견 사항
 
-No real defects found. The implementation's no-throw contract, timeout bound, dedupe ledger,
-dispatcher routing, use-case safety net, and config gating all held under every adversarial
-input attempted, including:
+실제 결함 없음. 시도한 모든 적대적 입력 — 파이프라인 각 단계 협력자의 동기 throw·rejected promise, abort 타이머와
+경합하는 무한 대기 협력자, 오류 경로의 `undefined` 로거, dispatcher 정확 일치 라우팅을 노리는 near-miss/경계 제목,
+한 배치 tick 내 다중 동시 throw — 에 대해 no-throw 계약·timeout 유계·dedupe 원장·라우팅·유스케이스 안전망·config
+게이팅이 모두 계약대로 버텼다.
 
-- synchronous throws and rejected promises from every pipeline collaborator stage,
-- an intentionally never-resolving collaborator racing the abort timer,
-- an absent (`undefined`) optional logger during an error path,
-- near-miss/edge-case job titles probing the dispatcher's exact-match routing,
-- multiple simultaneous processor throws within one batch tick.
+## 산출물
 
-## Artifact
-
-Report path: `logs/20260718/concurrency-demo-job/qa-red-team-report.md` (this file).
+리포트 경로: `logs/20260718/concurrency-demo-job/qa-red-team-report.md` (이 파일).
