@@ -207,6 +207,9 @@ jobs:
       - name: vX.Y.Z 태그 멱등 부착
         run: |
           set -euo pipefail
+          # annotated 태그(-a)는 tagger identity가 필요하므로 러너용 봇 identity를 설정한다.
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           version="$(node -p "require('./package.json').version")"
           tag="v${version}"
           echo "package.json version: ${version} → tag ${tag}"
