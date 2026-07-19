@@ -141,4 +141,21 @@ describe('formatDigestMessage', () => {
     expect(text).toContain('*▸ 주제*');
     expect(text).toContain('  요약');
   });
+
+  it('신뢰할 수 없는 콘텐츠의 Slack mrkdwn 제어문자(&, <, >)를 이스케이프한다', () => {
+    const groups: DigestGroup[] = [{
+      topic: '<!channel> 주제 & 이슈',
+      summary: '<https://evil.example|클릭> 링크',
+      headlines: ['A & B <tag>'],
+    }];
+
+    const text = formatDigestMessage('t & t', groups);
+
+    // 원문 컨트롤 시퀀스가 그대로 남지 않아야 한다(멘션 스팸/링크 마스킹 방어).
+    expect(text).not.toContain('<!channel>');
+    expect(text).not.toContain('<https://evil.example|클릭>');
+    expect(text).toContain('&lt;!channel&gt; 주제 &amp; 이슈');
+    expect(text).toContain('&lt;https://evil.example|클릭&gt; 링크');
+    expect(text).toContain('A &amp; B &lt;tag&gt;');
+  });
 });

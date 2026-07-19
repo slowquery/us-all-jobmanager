@@ -45,7 +45,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "quantile_over_time(0.50, {source=\"scheduler\"} | json | unwrap digestDurationMs [5m])"
+          "expr": "quantile_over_time(0.50, {source=\"scheduler\"} |= `news digest` | json | unwrap digestDurationMs [5m])"
         },
         {
           "refId": "B",
@@ -54,7 +54,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "quantile_over_time(0.95, {source=\"scheduler\"} | json | unwrap digestDurationMs [5m])"
+          "expr": "quantile_over_time(0.95, {source=\"scheduler\"} |= `news digest` | json | unwrap digestDurationMs [5m])"
         }
       ]
     },
@@ -87,7 +87,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "sum by (outcome) (count_over_time({source=\"scheduler\"} | json | digestDurationMs != \"\" [5m]))"
+          "expr": "sum by (outcome) (count_over_time({source=\"scheduler\"} |= `news digest` | json | digestDurationMs != \"\" [5m]))"
         }
       ]
     },
@@ -114,7 +114,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "sum by (outcome) (count_over_time({source=\"scheduler\"} | json | digestDurationMs != \"\" [1h]))",
+          "expr": "sum by (outcome) (count_over_time({source=\"scheduler\"} |= `news digest` | json | digestDurationMs != \"\" [1h]))",
           "instant": true
         }
       ]
@@ -148,7 +148,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "avg_over_time({source=\"scheduler\"} | json | unwrap articleCount [5m])"
+          "expr": "avg_over_time({source=\"scheduler\"} |= `news digest` | json | unwrap articleCount [5m])"
         },
         {
           "refId": "B",
@@ -157,7 +157,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "avg_over_time({source=\"scheduler\"} | json | unwrap groupCount [5m])"
+          "expr": "avg_over_time({source=\"scheduler\"} |= `news digest` | json | unwrap groupCount [5m])"
         }
       ]
     },
@@ -188,7 +188,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "{source=\"scheduler\"} | json | digestDurationMs != \"\""
+          "expr": "{source=\"scheduler\"} |= `news digest` | json | digestDurationMs != \"\""
         }
       ]
     },
