@@ -1,12 +1,14 @@
 import { randomUUID } from 'crypto';
 import { Config, JsonDB } from 'node-json-db';
 import { Job, JobStatus } from '../../domain/job';
+import { deleteError } from '../../domain/job-delete';
 import { transitionError } from '../../domain/job-transitions';
 import { LoggerPort } from '../../application/ports/logger.port';
 import {
   BatchRejection,
   BatchResult,
   CreateJobData,
+  DeleteResult,
   JobPatch,
   JobRepository,
   JobSearchQuery,
@@ -282,5 +284,36 @@ export class JsonDbJobRepository implements JobRepository {
         rejected,
       };
     });
+  }
+
+  /**
+   * atomic read→guard→delete. 임계구역 내부에서 재조회한 최신 상태를 기준으로 domain의
+   * `deleteError` guard를 평가한다(findById-then-delete 분리 금지, TOCTOU 방지). 거부 시
+   * 무쓰기(파일에 어떤 write도 발생하지 않음).
+   */
+  async delete(id: string): Promise<DeleteResult> {
+    return this.enqueue(async () => {
+      const jobs = await this.db.getData(JOBS_PATH) as Job[];
+      const index = jobs.findIndex((job) => job.id === id);
+      if (index === -1) {
+        return {
+          ok: false,
+          reason: 'NOT_FOUND',
+        };
+      }
+
+      const current = jobs[index];
+      const error = deleteError(current);
+      if (error) {
+        return {
+          ok: false,
+          reason: error,
+        };
+      }
+
+      const nextJobs = jobs.filter((job) => job.id !== id);
+      await this.db.push(JOBS_PATH, nextJobs, true);
+      return { ok: true };
+    }, id);
   }
 }

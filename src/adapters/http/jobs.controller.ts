@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -14,6 +15,7 @@ import {
   ApiBody,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -22,6 +24,7 @@ import {
 } from '@nestjs/swagger';
 import { TransitionFailureReason } from '../../application/ports/job-repository.port';
 import { CreateJobUseCase } from '../../application/use-cases/create-job.use-case';
+import { DeleteJobUseCase } from '../../application/use-cases/delete-job.use-case';
 import { GetJobsUseCase } from '../../application/use-cases/get-jobs.use-case';
 import { GetJobUseCase } from '../../application/use-cases/get-job.use-case';
 import { PatchJobUseCase } from '../../application/use-cases/patch-job.use-case';
@@ -70,9 +73,30 @@ function toTransitionFailureException(id: string, reason: TransitionFailureReaso
 }
 
 /**
- * 작업(Job) REST API 컨트롤러. REQUIREMENTS.md의 5개 엔드포인트(`POST/GET/GET search/GET :id/PATCH`)를
+ * 삭제 실패 사유를 HTTP 상태/에러 코드로 매핑한다(404 NOT_FOUND / 409 JOB_IN_PROGRESS).
+ * @param id 대상 job id(에러 메시지 구성용)
+ * @param reason `DeleteResult` 실패 사유(NOT_FOUND/FORBIDDEN_PROCESSING)
+ * @returns 컨트롤러가 던질 {@link ApiException}
+ */
+function toDeleteFailureException(id: string, reason: 'NOT_FOUND' | 'FORBIDDEN_PROCESSING'): ApiException {
+  if (reason === 'NOT_FOUND') {
+    return new ApiException(HttpStatus.NOT_FOUND, 'NOT_FOUND', `id=${id} 인 작업을 찾을 수 없습니다.`);
+  }
+  return new ApiException(
+    HttpStatus.CONFLICT,
+    'JOB_IN_PROGRESS',
+    '처리 중인 작업은 삭제할 수 없습니다.',
+    [{
+      field: 'status',
+      reason: 'processing 상태의 작업은 삭제가 금지됩니다.',
+    }],
+  );
+}
+
+/**
+ * 작업(Job) REST API 컨트롤러. REQUIREMENTS.md의 6개 엔드포인트(`POST/GET/GET search/GET :id/PATCH/DELETE :id`)를
  * 04-api-layer-design.md·09-final-design.md 확정 스펙대로 노출한다. 이 계층은 DTO 형식 검증(전역
- * `ValidationPipe`)까지만 책임지고, 전이 가부 판정은 유스케이스(그 안의 포트 구현체 임계구역)에
+ * `ValidationPipe`)까지만 책임지고, 전이·삭제 가부 판정은 유스케이스(그 안의 포트 구현체 임계구역)에
  * 위임한다(Rule 3, 헥사고날 경계).
  */
 @ApiTags('jobs')
@@ -84,6 +108,7 @@ export class JobsController {
     private readonly searchJobsUseCase: SearchJobsUseCase,
     private readonly getJobUseCase: GetJobUseCase,
     private readonly patchJobUseCase: PatchJobUseCase,
+    private readonly deleteJobUseCase: DeleteJobUseCase,
   ) {}
 
   /** `POST /jobs` — 새 작업 생성(201). */
@@ -331,5 +356,48 @@ export class JobsController {
       throw toTransitionFailureException(id, result.reason);
     }
     return toJobResponse(result.job);
+  }
+
+  /**
+   * `DELETE /jobs/:id` — 작업 삭제(204). `processing` 상태의 작업은 삭제가 금지되어 409
+   * `JOB_IN_PROGRESS`로 거부한다. 미존재 시 404 NOT_FOUND.
+   */
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: '작업 삭제',
+    description: 'id로 작업 1건을 삭제한다. processing 상태는 409로 거부되며, 미존재 시 404.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: '작업 식별자(UUID)',
+    example: '3f8a1c2e-9b4d-4e21-8a77-1d2c3b4e5f60',
+  })
+  @ApiNoContentResponse({ description: '삭제 완료(응답 바디 없음)' })
+  @ApiNotFoundResponse({
+    description: '미존재',
+    type: ApiErrorResponseDto,
+    example: {
+      code: 'NOT_FOUND',
+      message: 'id=... 인 작업을 찾을 수 없습니다.',
+    },
+  })
+  @ApiConflictResponse({
+    description: '처리 중인 작업 삭제 시도',
+    type: ApiErrorResponseDto,
+    example: {
+      code: 'JOB_IN_PROGRESS',
+      message: '처리 중인 작업은 삭제할 수 없습니다.',
+      details: [{
+        field: 'status',
+        reason: 'processing 상태의 작업은 삭제가 금지됩니다.',
+      }],
+    },
+  })
+  async remove(@Param('id') id: string): Promise<void> {
+    const result = await this.deleteJobUseCase.execute(id);
+    if (!result.ok) {
+      throw toDeleteFailureException(id, result.reason);
+    }
   }
 }

@@ -1,5 +1,6 @@
 import { HttpStatus } from '@nestjs/common';
 import { CreateJobUseCase } from '../../application/use-cases/create-job.use-case';
+import { DeleteJobUseCase } from '../../application/use-cases/delete-job.use-case';
 import { GetJobsUseCase } from '../../application/use-cases/get-jobs.use-case';
 import { GetJobUseCase } from '../../application/use-cases/get-job.use-case';
 import { PatchJobUseCase } from '../../application/use-cases/patch-job.use-case';
@@ -19,6 +20,7 @@ function makeController(): { controller: JobsController; repository: InMemoryJob
     new SearchJobsUseCase(repository),
     new GetJobUseCase(repository),
     new PatchJobUseCase(repository, logger),
+    new DeleteJobUseCase(repository, logger),
   );
   return {
     controller,
@@ -128,5 +130,42 @@ describe('JobsController', () => {
     const response = await controller.patch('a', { status: 'pending' });
 
     expect(response.status).toBe('pending');
+  });
+
+  it('remove: 존재하는 job을 삭제하고 undefined(204 no-body)를 반환한다', async () => {
+    const { controller, repository } = makeController();
+    repository.seed(makeJob({
+      id: 'a',
+      status: 'pending',
+    }));
+
+    const response = await controller.remove('a');
+
+    expect(response).toBeUndefined();
+    expect(await repository.findById('a')).toBeNull();
+  });
+
+  it('remove: 존재하지 않으면 404 NOT_FOUND ApiException을 던진다', async () => {
+    const { controller } = makeController();
+
+    await expect(controller.remove('missing')).rejects.toBeInstanceOf(ApiException);
+    await expect(controller.remove('missing')).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'NOT_FOUND' }),
+      status: HttpStatus.NOT_FOUND,
+    });
+  });
+
+  it('remove: processing job은 409 JOB_IN_PROGRESS로 거부되고 삭제되지 않는다', async () => {
+    const { controller, repository } = makeController();
+    repository.seed(makeJob({
+      id: 'a',
+      status: 'processing',
+    }));
+
+    await expect(controller.remove('a')).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'JOB_IN_PROGRESS' }),
+      status: HttpStatus.CONFLICT,
+    });
+    expect(await repository.findById('a')).not.toBeNull();
   });
 });

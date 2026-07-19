@@ -7,4 +7,26 @@ while read -r localref localsha remoteref remotesha; do
     exit 1
   fi
 done
+
+# admin-ui 빌드 신선도 검증(Rule 7 master 백스톱 이후, stdin 루프 밖에서 수행 — stdin 미소비).
+# 커밋된 public/이 admin-ui 소스와 어긋나면 푸시를 거부한다. 로컬 훅은 빠른 피드백이며,
+# 권위 있는 게이트는 CI(.github/workflows/admin-ui-freshness.yml)다 — GitHub squash 머지는 로컬 훅을 타지 않는다.
+# admin-ui는 npm 프로젝트다(admin-ui/package-lock.json). 빌드는 working tree 기준이므로,
+# admin-ui 변경이 미커밋/미stash 상태면 오탐이 날 수 있다 — 그 경우 먼저 커밋/stash 하라.
+if [ -d admin-ui ]; then
+  if [ ! -d admin-ui/node_modules ]; then
+    echo "pre-push: admin-ui/node_modules 없음 — 로컬 신선도 검증 건너뜀(CI가 권위 게이트). 'npm --prefix admin-ui ci' 후 재검증 가능." >&2
+  else
+    echo "pre-push: admin-ui 빌드 신선도 검증 중..." >&2
+    if ! npm --prefix admin-ui run build >/dev/null; then
+      echo "pre-push: admin-ui 빌드 실패 — 소스를 고치고 다시 시도하세요." >&2
+      exit 1
+    fi
+    if [ -n "$(git status --porcelain -- public)" ]; then
+      echo "pre-push: public/ 가 최신 admin-ui 빌드와 다릅니다 — 'yarn build:admin'(=npm run build) 실행 후 public/ 을 커밋하세요." >&2
+      echo "         (dirty worktree라면 admin-ui 변경을 먼저 커밋/stash 하세요.)" >&2
+      exit 1
+    fi
+  fi
+fi
 exit 0

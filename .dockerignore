@@ -16,3 +16,6 @@ docs/
 .editorconfig
 *.md
 observability/
+# admin-ui 소스/의존성은 런타임 이미지에 필요 없다(프론트엔드는 커밋된 public/으로만 서빙).
+# public/ 은 의도적으로 제외하지 않는다 — build 스테이지 COPY . . 에 포함되어야 한다.
+admin-ui/

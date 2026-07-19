@@ -64,16 +64,26 @@ export interface BatchResult {
 }
 
 /**
+ * `delete` 호출 결과 판별 유니온. 성공 시 삭제됐음만 알리고(호출자가 삭제된 job 본문을
+ * 필요로 하지 않음, DELETE 204는 응답 바디가 없다), 실패 시 사유를 담는다.
+ * `FORBIDDEN_PROCESSING`은 domain의 {@link DeleteError}와 동일 값이다.
+ */
+export type DeleteResult =
+  | { ok: true }
+  | { ok: false; reason: 'NOT_FOUND' | 'FORBIDDEN_PROCESSING' };
+
+/**
  * 작업(Job) 영속화 포트. `application` 계층은 이 인터페이스에만 의존하며, node-json-db 등
  * 구체 저장소·동시성 구현은 `infrastructure` 계층의 구현체(`JsonDbJobRepository` 등)가 담당한다
  * (Rule 3, 헥사고날 경계).
  *
  * ### 동시성 계약 (02-persistence-concurrency-design.md 소유, 09-final-design.md 확정 #2)
- * `withTransition`/`withBatch`를 구현하는 adapter는 반드시 **atomic read→guard→write**를
- * 준수해야 한다: 인프로세스 직렬화 큐(단일 writer)의 임계구역에 진입 → 대상 job의 최신 상태를
- * 재조회(stale 캐시 금지) → domain의 `canTransition`/`transitionError` guard를 **임계구역
- * 내부에서** 평가(guard-in-lock) → 참이면 갱신 후 저장, 거짓이면 아무 것도 쓰지 않고 임계구역을
- * 벗어난다. guard를 임계구역 밖에서 미리 평가해 캐싱하는 것은 TOCTOU 경쟁을 유발하므로 금지된다.
+ * `withTransition`/`withBatch`/`delete`를 구현하는 adapter는 반드시 **atomic
+ * read→guard→write**를 준수해야 한다: 인프로세스 직렬화 큐(단일 writer)의 임계구역에 진입 →
+ * 대상 job의 최신 상태를 재조회(stale 캐시 금지) → domain의 `canTransition`/`transitionError`
+ * (또는 `delete`의 경우 `canDelete`/`deleteError`) guard를 **임계구역 내부에서** 평가
+ * (guard-in-lock) → 참이면 갱신/삭제 후 저장, 거짓이면 아무 것도 쓰지 않고 임계구역을 벗어난다.
+ * guard를 임계구역 밖에서 미리 평가해 캐싱하는 것은 TOCTOU 경쟁을 유발하므로 금지된다.
  * `application` 계층(유스케이스)은 이 포트를 호출하는 것으로 계약 준수를 위임하며, 락/큐의 구현
  * 세부는 알지 못한다.
  */
@@ -134,4 +144,16 @@ export interface JobRepository {
    * @returns 커밋된 Job 목록과 거부된 id/사유 목록
    */
   withBatch(ids: string[], target: JobStatus): Promise<BatchResult>;
+
+  /**
+   * job 1건을 atomic read→guard→delete로 삭제한다. 임계구역 내부에서 최신 상태를 재조회한 뒤
+   * (findById-then-delete로 분리하는 것은 재조회와 삭제 사이에 다른 작업이 끼어들 수 있는
+   * TOCTOU 경쟁을 유발하므로 금지된다) domain의 `deleteError` guard를 평가한다 — 존재하지
+   * 않으면 `NOT_FOUND`, `processing` 상태면 `FORBIDDEN_PROCESSING`으로 거부하고 이 경우 파일
+   * write는 발생하지 않는다(무쓰기 거부). 거부되지 않으면 대상을 제거하고 파일 write 1회로
+   * 커밋한다.
+   * @param id 삭제 대상 job id
+   * @returns 성공 시 `{ ok: true }`, 실패 시 사유(NOT_FOUND/FORBIDDEN_PROCESSING)
+   */
+  delete(id: string): Promise<DeleteResult>;
 }

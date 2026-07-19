@@ -1,9 +1,11 @@
 import { randomUUID } from 'crypto';
 import { Job, JobStatus } from '../../domain/job';
+import { deleteError } from '../../domain/job-delete';
 import { transitionError } from '../../domain/job-transitions';
 import {
   BatchResult,
   CreateJobData,
+  DeleteResult,
   JobPatch,
   JobRepository,
   JobSearchQuery,
@@ -117,5 +119,26 @@ export class InMemoryJobRepository implements JobRepository {
       committed,
       rejected,
     };
+  }
+
+  async delete(id: string): Promise<DeleteResult> {
+    const current = this.jobs.get(id);
+    if (!current) {
+      return {
+        ok: false,
+        reason: 'NOT_FOUND',
+      };
+    }
+
+    const error = deleteError(current);
+    if (error) {
+      return {
+        ok: false,
+        reason: error,
+      };
+    }
+
+    this.jobs.delete(id);
+    return { ok: true };
   }
 }

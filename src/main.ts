@@ -7,13 +7,40 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import type { NextFunction, Request, Response } from 'express';
+import { join } from 'node:path';
+import { existsSync } from 'node:fs';
+// eslint-disable-next-line import/order -- otel.bootstrap은 adapter 코드(@opentelemetry 사용)를
+// 끌어오는 app.module보다 반드시 먼저 import되어야 한다(파일 상단 주석 참조). import/order의
+// 알파벳 정렬(app < otel)보다 이 부트스트랩 순서 보장이 우선한다.
 import { initializeOtel } from './otel.bootstrap';
 import { AppModule } from './app.module';
 
 initializeOtel();
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // 보안 헤더(최소 하드닝): 인증은 범위 외(수용 리스크)이므로, 미인증 관리자 표면의 잔여 위험을
+  // 줄이기 위해 클릭재킹/MIME 스니핑/레퍼러 유출을 방지하는 안전한(SPA 비파괴) 헤더만 부여한다.
+  app.use((_req: Request, res: Response, next: NextFunction) => {
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    next();
+  });
+
+  // 관리자 SPA(admin-ui Vite 빌드 산출물) 정적 서빙. dist/main.js 기준 상대 경로로 해석해
+  // nest start·node dist/main.js·Docker 어디서든 <root>/public을 가리킨다(cwd 비의존).
+  const publicDir = join(__dirname, '..', 'public');
+  if (!existsSync(publicDir)) {
+    Logger.warn(
+      `public/ 를 ${publicDir} 에서 찾을 수 없습니다 — /admin/ 이 404됩니다 (\`yarn build:admin\` 실행 후 public/ 커밋).`,
+      'Bootstrap',
+    );
+  }
+  app.useStaticAssets(publicDir, { prefix: '/admin/' });
 
   // Swagger(OpenAPI) 문서. 요청/응답 example은 각 DTO의 @ApiProperty·컨트롤러의 @ApiResponse에
   // 선언돼 있다. /api-docs에서 Swagger UI, /api-docs-json에서 OpenAPI JSON을 제공한다.
