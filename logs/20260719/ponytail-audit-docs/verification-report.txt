@@ -1,0 +1,19 @@
+# 검증 리포트 — merged master(v0.9.1) 현재 상태 실측
+생성: 2026-07-20 00:10 KST  / HEAD: fcd7450 docs: (0.9.1) README에 logs.txt 스냅샷 + 아키텍처 설계(ARCHITECTURE.md) 링크 추가 (#13)
+
+## yarn build
+OK (exit 0)
+## yarn lint
+clean (exit 0)
+## yarn test (unit+concurrency+adversarial)
+Test Suites: 44 passed, 44 total
+Tests:       250 passed, 250 total
+## yarn test:e2e
+Test Suites: 1 passed, 1 total
+Tests:       24 passed, 24 total
+## Rule3 imports (domain/app -> adapters/infra)
+count=0 (기대 0)
+## 엔드포인트/기능 확인
+UNSUPPORTED_JOB_TYPE in controller: 2
+ARCHITECTURE mermaid: 4
+version: 0.9.1
