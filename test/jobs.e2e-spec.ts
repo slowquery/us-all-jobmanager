@@ -6,7 +6,9 @@ import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
-import { JOB_REPOSITORY, LOGGER_PORT } from '../src/adapters/tokens';
+import { JOB_REPOSITORY, LOGGER_PORT, SUPPORTED_JOB_TYPES } from '../src/adapters/tokens';
+import { AllowListJobTypes } from '../src/application/ports/supported-job-types.port';
+import { AllowAllJobTypes } from '../src/application/testing/allow-all-job-types';
 import { Job } from '../src/domain/job';
 import { MAX_RETRY_COUNT } from '../src/domain/job-transitions';
 import { FileLoggerAdapter } from '../src/infrastructure/logging/file-logger.adapter';
@@ -99,6 +101,8 @@ describe('Jobs API (e2e)', () => {
         factory: (logger: FileLoggerAdapter) => new JsonDbJobRepository(dbPath, logger),
         inject: [LOGGER_PORT],
       })
+      .overrideProvider(SUPPORTED_JOB_TYPES)
+      .useValue(new AllowAllJobTypes())
       .compile();
 
     app = moduleRef.createNestApplication();
@@ -336,5 +340,58 @@ describe('Jobs API (e2e)', () => {
       const stillThere = await request(app.getHttpServer()).get(`/jobs/${seededProcessing.id}`).expect(200);
       expect(stillThere.body.status).toBe('processing');
     });
+  });
+});
+
+describe('Jobs API (e2e) — 구현된 작업 유형만 허용', () => {
+  let app: INestApplication;
+  let dir: string;
+
+  beforeAll(async () => {
+    dir = mkdtempSync(join(tmpdir(), 'jobs-e2e-supported-'));
+    const dbPath = join(dir, 'jobs.json');
+    const logPath = join(dir, 'logs.txt');
+
+    // 운영 배선과 동일하게 "구현된 유형(news-digest)만 허용"하는 레지스트리로 앱을 구성한다.
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(LOGGER_PORT)
+      .useFactory({ factory: () => new FileLoggerAdapter(logPath) })
+      .overrideProvider(JOB_REPOSITORY)
+      .useFactory({
+        factory: (logger: FileLoggerAdapter) => new JsonDbJobRepository(dbPath, logger),
+        inject: [LOGGER_PORT],
+      })
+      .overrideProvider(SUPPORTED_JOB_TYPES)
+      .useValue(new AllowListJobTypes(['news-digest']))
+      .compile();
+
+    app = moduleRef.createNestApplication();
+    await app.init();
+  });
+
+  afterAll(async () => {
+    await app.close();
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('구현되지 않은 작업 유형은 400 UNSUPPORTED_JOB_TYPE envelope을 반환한다', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/jobs')
+      .send({ title: '임의 작업', description: '구현되지 않은 유형' })
+      .expect(400);
+
+    expect(response.body.code).toBe('UNSUPPORTED_JOB_TYPE');
+    expect(typeof response.body.message).toBe('string');
+    expect(Array.isArray(response.body.details)).toBe(true);
+  });
+
+  it('구현된 sentinel 제목(news-digest)은 201로 생성된다', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/jobs')
+      .send({ title: 'news-digest', description: '오늘의 뉴스' })
+      .expect(201);
+
+    expect(response.body.title).toBe('news-digest');
+    expect(response.body.status).toBe('pending');
   });
 });

@@ -147,7 +147,7 @@ export class JobsController {
     },
   })
   @ApiBadRequestResponse({
-    description: '검증 실패',
+    description: '검증 실패(VALIDATION_FAILED) 또는 미구현 작업 유형(UNSUPPORTED_JOB_TYPE)',
     type: ApiErrorResponseDto,
     example: {
       code: 'VALIDATION_FAILED',
@@ -159,11 +159,24 @@ export class JobsController {
     },
   })
   async create(@Body() dto: CreateJobDto): Promise<JobResponseDto> {
-    const job = await this.createJobUseCase.execute({
+    const result = await this.createJobUseCase.execute({
       title: dto.title,
       description: dto.description ?? '',
     });
-    return toJobResponse(job);
+    if (!result.ok) {
+      throw new ApiException(
+        HttpStatus.BAD_REQUEST,
+        'UNSUPPORTED_JOB_TYPE',
+        `구현되지 않은 작업 유형입니다: "${result.title}".`,
+        [{
+          field: 'title',
+          reason: result.supported.length > 0
+            ? `현재 구현된 작업 유형: ${result.supported.join(', ')}`
+            : '현재 구현된 작업 유형이 없습니다.',
+        }],
+      );
+    }
+    return toJobResponse(result.job);
   }
 
   /** `GET /jobs` — 전체 작업 목록 조회(200, 페이지네이션 없음). */

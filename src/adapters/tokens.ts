@@ -10,3 +10,6 @@ export const LOGGER_PORT = Symbol('LOGGER_PORT');
 
 /** {@link JOB_REPOSITORY}와 동일한 목적의 `JobProcessor` DI 토큰(스케줄러 배선, S6). */
 export const JOB_PROCESSOR = Symbol('JOB_PROCESSOR');
+
+/** {@link JOB_REPOSITORY}와 동일한 목적의 `SupportedJobTypes` DI 토큰(구현된 작업 유형 레지스트리). */
+export const SUPPORTED_JOB_TYPES = Symbol('SUPPORTED_JOB_TYPES');

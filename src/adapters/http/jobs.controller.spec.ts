@@ -5,7 +5,9 @@ import { GetJobsUseCase } from '../../application/use-cases/get-jobs.use-case';
 import { GetJobUseCase } from '../../application/use-cases/get-job.use-case';
 import { PatchJobUseCase } from '../../application/use-cases/patch-job.use-case';
 import { SearchJobsUseCase } from '../../application/use-cases/search-jobs.use-case';
+import { AllowListJobTypes } from '../../application/ports/supported-job-types.port';
 import { InMemoryJobRepository } from '../../application/testing/in-memory-job-repository';
+import { AllowAllJobTypes } from '../../application/testing/allow-all-job-types';
 import { InMemoryLogger } from '../../application/testing/in-memory-logger';
 import { makeJob } from '../../application/testing/job.fixture';
 import { ApiException } from './api.exception';
@@ -15,7 +17,7 @@ function makeController(): { controller: JobsController; repository: InMemoryJob
   const repository = new InMemoryJobRepository();
   const logger = new InMemoryLogger();
   const controller = new JobsController(
-    new CreateJobUseCase(repository),
+    new CreateJobUseCase(repository, new AllowAllJobTypes()),
     new GetJobsUseCase(repository),
     new SearchJobsUseCase(repository),
     new GetJobUseCase(repository),
@@ -43,6 +45,29 @@ describe('JobsController', () => {
       status: 'pending',
     });
     expect((response as unknown as Record<string, unknown>).retryCount).toBeUndefined();
+  });
+
+  it('POST: 구현되지 않은 작업 유형은 400 UNSUPPORTED_JOB_TYPE ApiException을 던진다', async () => {
+    const repository = new InMemoryJobRepository();
+    const logger = new InMemoryLogger();
+    const controller = new JobsController(
+      new CreateJobUseCase(repository, new AllowListJobTypes(['news-digest'])),
+      new GetJobsUseCase(repository),
+      new SearchJobsUseCase(repository),
+      new GetJobUseCase(repository),
+      new PatchJobUseCase(repository, logger),
+      new DeleteJobUseCase(repository, logger),
+    );
+
+    await expect(controller.create({
+      title: '임의 작업',
+      description: '',
+    })).rejects.toBeInstanceOf(ApiException);
+    await expect(controller.create({
+      title: '임의 작업',
+      description: '',
+    })).rejects.toMatchObject({ status: HttpStatus.BAD_REQUEST });
+    expect(await repository.list()).toHaveLength(0);
   });
 
   it('GET list: 전체 목록과 count를 반환한다', async () => {
