@@ -150,6 +150,48 @@ yarn test:e2e      # supertest 기반 API e2e
 - 커버리지 임계값(`package.json`): 전역 statements 97% / branches 86% / functions 92% / lines 98%,
   `src/domain/`은 100%입니다. 실측치는 100%에 근접합니다(2026-07-19 기준 전역 98.7 / 94.3 / 95.1 / 99.0).
 
+### 3.1 관리자 페이지 UI 테스트 시나리오
+
+아래는 실제 측정 시나리오입니다: 관리자 페이지에서 작업을 **등록 → 확인 → 처리 결과 확인**까지 따라가며,
+각 단계를 스크린샷으로 남겼습니다.
+
+**① 등록** — 관리자 페이지(`/admin/`)에서 "새 작업"을 눌러 제목 `news-digest`로 작업을 생성합니다.
+
+![관리자 페이지 작업 생성 다이얼로그(제목 news-digest)](logs/20260719/news-digest-verification/01-admin-create-dialog.png)
+
+**② 확인** — 생성 직후 목록에 `Pending` 상태로 나타나고 "작업이 생성되었습니다" 토스트가 표시됩니다.
+
+![작업이 Pending 상태로 등록된 목록과 생성 토스트](logs/20260719/news-digest-verification/02-admin-job-registered.png)
+
+**③ 처리 결과 확인** — 다음 tick(≤60초)에 스케줄러가 처리하면 상태가 전이됩니다(성공 시 `Completed`).
+
+![tick 처리 후 작업 상태 전이(Completed) 확인](logs/20260719/news-digest-verification/03-admin-job-completed.png)
+
+> 관리자 페이지의 목록/검색/생성/수정/삭제/재시도 전 기능에 대한 UI E2E 스크린샷은
+> [`logs/20260718/admin-page/`](logs/20260718/admin-page/)에 있습니다
+> (예: [작업 생성 모달](logs/20260718/admin-page/E2E-12-create-modal.png),
+> [오류 상태 표시](logs/20260718/admin-page/E2E-11-error-state.png)).
+
+### 3.2 관측성 측정 결과(Grafana·Tempo·Loki)
+
+위 시나리오의 처리 결과를 관측성 스택에서 측정한 스크린샷입니다(상세 절차는
+[`logs/20260719/news-digest-verification/README.md`](logs/20260719/news-digest-verification/README.md) 및
+[`logs/20260719/observability-verification/README.md`](logs/20260719/observability-verification/README.md) 참조).
+
+- **Grafana 대시보드**:
+  [SLO 대시보드 전체](logs/20260719/observability-verification/02-slo-dashboard-full.png) ·
+  [처리 지연 p50 패널](logs/20260719/observability-verification/03-slo-p50-panel.png) ·
+  [평균 Latency 대시보드](logs/20260719/observability-verification/06-avg-latency-dashboard.png)
+- **Tempo 트레이스**:
+  [scheduler.tick→process-job→news.\* 스팬 계층](logs/20260719/news-digest-verification/05-tempo-trace-news-spans.png) ·
+  [스케줄러 tick 트레이스](logs/20260719/observability-verification/08-tempo-scheduler-tick.png) ·
+  [GET /jobs 트레이스](logs/20260719/observability-verification/07-tempo-http-get-jobs.png)
+- **Loki 로그**:
+  [news-digest 이벤트](logs/20260719/news-digest-verification/04-loki-digest-event.png) ·
+  [HTTP 요청 로그](logs/20260719/observability-verification/10-loki-http-logs.png) ·
+  [에러 로그](logs/20260719/observability-verification/11-loki-error-logs.png) ·
+  [로그→트레이스 파생 필드(상호 이동)](logs/20260719/observability-verification/09-loki-to-tempo-derived-field.png)
+
 ---
 
 ## 4. API 사용법
