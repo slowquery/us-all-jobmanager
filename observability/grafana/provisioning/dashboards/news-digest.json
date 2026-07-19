@@ -1,0 +1,211 @@
+{
+  "id": null,
+  "uid": "newsdigest",
+  "title": "뉴스 다이제스트 관측성",
+  "description": "뉴스 다이제스트 job 처리의 실행시간·처리속도·성공률 대시보드. 소스는 logs.txt NDJSON의 `digest` 이벤트(Loki) — FileLoggerAdapter가 `type` 필드를 제외하므로 고유 필드 `digestDurationMs`의 존재로 다이제스트 이벤트를 구분한다. 단계별(fetch/summarize/notify) 소요시간은 Tempo 트레이스의 `news.*` 자식 스팬에서 확인한다(하단 안내 패널).",
+  "tags": [
+    "news-digest",
+    "observability"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "1. 다이제스트 실행시간 p50/p95 (digestDurationMs)",
+      "description": "digest 이벤트의 digestDurationMs(fetch+요약+전송 합산) 분위수. 고유 필드 unwrap이 다른 이벤트 라인을 자동 제외한다.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "legendFormat": "p50",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "quantile_over_time(0.50, {source=\"scheduler\"} |= `news digest` | json | unwrap digestDurationMs [5m])"
+        },
+        {
+          "refId": "B",
+          "legendFormat": "p95",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "quantile_over_time(0.95, {source=\"scheduler\"} |= `news digest` | json | unwrap digestDurationMs [5m])"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "2. 처리속도 (결과별 다이제스트 수 / 5m)",
+      "description": "digestDurationMs 필드 존재로 다이제스트 이벤트만 필터하고 outcome(completed/failed) 라벨로 5분 구간 처리 건수를 집계한다.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "legendFormat": "{{outcome}}",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "sum by (outcome) (count_over_time({source=\"scheduler\"} |= `news digest` | json | digestDurationMs != \"\" [5m]))"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "3. 성공/실패 분포 (1h)",
+      "description": "최근 1시간 다이제스트 처리 결과 분포(outcome).",
+      "type": "piechart",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "legendFormat": "{{outcome}}",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "sum by (outcome) (count_over_time({source=\"scheduler\"} |= `news digest` | json | digestDurationMs != \"\" [1h]))",
+          "instant": true
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "4. 평균 기사 수 · 그룹 수",
+      "description": "다이제스트 1건이 다룬 기사 수(articleCount)와 묶인 주제 그룹 수(groupCount)의 5분 평균.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "legendFormat": "기사 수(avg)",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "avg_over_time({source=\"scheduler\"} |= `news digest` | json | unwrap articleCount [5m])"
+        },
+        {
+          "refId": "B",
+          "legendFormat": "그룹 수(avg)",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "avg_over_time({source=\"scheduler\"} |= `news digest` | json | unwrap groupCount [5m])"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "5. 최근 다이제스트 처리 로그",
+      "description": "digest 이벤트 원문(결과·소요시간·기사수·그룹수·모델). 로그 라인의 traceId를 눌러 Tempo 트레이스로 이동할 수 있다(derived field).",
+      "type": "logs",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 16,
+        "x": 8,
+        "y": 8
+      },
+      "options": {
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "{source=\"scheduler\"} |= `news digest` | json | digestDurationMs != \"\""
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "단계별 소요시간(fetch/summarize/notify)은 Tempo에서",
+      "type": "text",
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "뉴스 다이제스트 처리는 `scheduler.process-job` 스팬 아래에 **`news.fetch` → `news.summarize` → `news.notify`** 자식 스팬을 남긴다. Grafana **Explore → Tempo** 데이터소스에서 서비스 `us-all-jobmanager`의 트레이스를 열면 각 단계의 실행시간(waterfall)과 속성(`news.article_count`, `news.group_count`, `news.model`)을 볼 수 있다. 위 로그 패널의 traceId 링크(`Tempo에서 보기`)로도 바로 이동한다."
+      }
+    }
+  ]
+}

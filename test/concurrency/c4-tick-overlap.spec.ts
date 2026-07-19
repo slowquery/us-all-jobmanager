@@ -7,6 +7,7 @@ import { JobSchedulerAdapter } from '../../src/adapters/scheduler/job-scheduler.
 import { ProcessPendingJobsUseCase } from '../../src/application/use-cases/process-pending-jobs.use-case';
 import { JobProcessor } from '../../src/application/ports/job-processor.strategy';
 import { InMemoryLogger } from '../../src/application/testing/in-memory-logger';
+import { SlowJobProcessor } from '../../src/application/testing/slow-job.processor';
 import { JsonDbJobRepository } from '../../src/infrastructure/persistence/json-db-job.repository';
 
 /**
@@ -107,5 +108,57 @@ describe('C-4 tick 중복(overrun) 재현', () => {
     // 겹침이 차단되었으므로 각 job은 정확히 1회씩만 처리된다(중복 없음).
     expect(processedIds).toHaveLength(3);
     expect(new Set(processedIds).size).toBe(3);
+  });
+});
+
+describe('C-4 확장: SlowJobProcessor로 실제 지연을 연장해 가드 켠 상태의 tick 겹침을 재현', () => {
+  let dir: string;
+  let dbPath: string;
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('가드 켠 구성: 느린 첫 tick이 gate로 처리를 보류하는 동안 발화한 둘째 tick은 스킵되고(스킵 로그 1건), 느린 처리가 끝난 뒤 각 job은 정확히 1회씩만 처리된다', async () => {
+    ({ dir, path: dbPath } = makeTempDbPath('c4-slow-guard-'));
+    const seeded = Array.from({ length: 3 }, () => makeJob({ status: 'pending' }));
+    writeFileSync(dbPath, JSON.stringify({ jobs: seeded }));
+    const repo = new JsonDbJobRepository(dbPath);
+
+    let releaseGate: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      releaseGate = resolve;
+    });
+    const slowProcessor = new SlowJobProcessor({ gate });
+    const logger = new InMemoryLogger();
+    const useCase = new ProcessPendingJobsUseCase(repo, slowProcessor, logger);
+    const executeSpy = jest.spyOn(useCase, 'execute');
+    const adapter = new JobSchedulerAdapter(useCase, logger);
+
+    // 첫 tick을 발화하되 await하지 않는다 — SlowJobProcessor가 gate에서 멈춰 있는 동안 "진행 중" 상태가 유지된다.
+    const firstTick = adapter.tick();
+    // 실제 비동기 틱(수 ms)을 흘려보내 첫 tick이 확실히 처리 파이프라인 내부(gate 대기 중)에 있게 한다.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    // 둘째 tick 발화: 첫 tick이 아직 처리 중이므로 overrun 가드에 의해 즉시 스킵되어야 한다.
+    const secondTick = adapter.tick();
+    await secondTick;
+
+    // 스킵된 시점까지는 execute가 1회만 호출되고, 처리 중인 job도 아직 gate에 막혀 완료되지 않았다.
+    expect(executeSpy).toHaveBeenCalledTimes(1);
+    const skipEvents = logger.events.filter((e) => e.type === 'tick' && e.phase === 'skipped');
+    expect(skipEvents).toHaveLength(1);
+
+    // 느린 처리를 풀어 첫 tick을 마무리한다.
+    releaseGate();
+    await firstTick;
+
+    // 둘째 tick이 차단되었으므로 execute는 여전히 1회, 각 job은 정확히 1회씩만 처리된다(중복 없음).
+    expect(executeSpy).toHaveBeenCalledTimes(1);
+    expect(slowProcessor.processed).toHaveLength(3);
+    expect(new Set(slowProcessor.processed).size).toBe(3);
+
+    const endEvents = logger.events.filter((e) => e.type === 'tick' && e.phase === 'end');
+    expect(endEvents).toHaveLength(1);
   });
 });

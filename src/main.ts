@@ -1,4 +1,8 @@
 import 'reflect-metadata';
+// .env 로드는 다른 어떤 코드보다 먼저 실행되어야 한다 — otel 부트스트랩과 NestFactory 모듈 배선
+// (스케줄러의 JOB_PROCESSOR useFactory가 뉴스 다이제스트 env를 읽는 지점)이 이미 채워진
+// process.env를 보게 하기 위함이다. dotenv/config는 import 시점에 즉시 .env를 로드한다.
+import 'dotenv/config';
 // otel.bootstrap은 나머지 import(특히 @opentelemetry/api를 사용하는 adapter 코드)보다 먼저
 // 실행되어야 SDK가 글로벌 TracerProvider/ContextManager를 선점 등록한다(06-observability-design.md
 // traceId 규약 ②: 상시 초기화가 정본). import 순서 자체가 부트스트랩 순서를 보장하는 지점이므로

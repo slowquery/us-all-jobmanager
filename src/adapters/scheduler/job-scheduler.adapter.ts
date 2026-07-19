@@ -34,7 +34,7 @@ export const SCHEDULER_TICK_MS = 60_000;
  * 스킵되지 않고 실제로 처리를 진행하는 tick마다 `scheduler.tick` 루트 스팬을 연다
  * (06-observability-design.md 트레이싱 설계, 09-final-design.md 확정 #12). job별 자식 스팬은 이
  * 클래스가 직접 열지 않는다 — `ProcessPendingJobsUseCase`에 주입되는 `JobProcessor`를 감싸는
- * `TracingJobProcessor`(adapter 계층 데코레이터, DI 배선은 `app.module.ts`)가 담당하며, OTel
+ * `TracingJobProcessor`(adapter 계층 데코레이터, DI 배선은 `scheduler.module.ts`)가 담당하며, OTel
  * context API가 `startActiveSpan`의 활성 컨텍스트를 통해 부모-자식 관계를 암묵적으로 연결한다
  * (도메인/유스케이스 무침투 — application/domain에 `@opentelemetry/*` import 금지).
  */

@@ -71,6 +71,25 @@ export interface DeleteLogEvent extends BaseLogEvent {
 }
 
 /**
+ * 뉴스 다이제스트 처리 1건의 결과·소요시간 이벤트(관측성 소스). 고유 필드 `digestDurationMs`로
+ * Loki LogQL이 다른 이벤트와 구분하며(FileLoggerAdapter가 `type`을 제외하므로), Grafana 대시보드가
+ * 이 필드로 실행시간(quantile)·처리속도(count/rate)·성공률(outcome)을 집계한다.
+ */
+export interface DigestLogEvent extends BaseLogEvent {
+  type: 'digest';
+  /** 처리 결과. */
+  outcome: 'completed' | 'failed';
+  /** 다이제스트 처리 총 소요시간(ms) — fetch+요약+전송 합산. */
+  digestDurationMs: number;
+  /** 가져온 기사 수. */
+  articleCount: number;
+  /** 묶인 주제 그룹 수. */
+  groupCount: number;
+  /** 사용한 Gemini 모델명. */
+  model: string;
+}
+
+/**
  * `LoggerPort.log`가 받는 구조화 로그 이벤트 판별 유니온(05-logging-design.md 이벤트 유형).
  * `timestamp`/`traceId`/`spanId`는 이 타입에 포함하지 않는다 — 그 값의 발급·주입은
  * infrastructure 구현체(`FileLoggerAdapter`)의 책임이다(아래 {@link LoggerPort} 참조).
@@ -81,6 +100,7 @@ export type LogEvent =
   | BatchLogEvent
   | TransitionLogEvent
   | LockLogEvent
+  | DigestLogEvent
   | ErrorLogEvent
   | DeleteLogEvent;
 

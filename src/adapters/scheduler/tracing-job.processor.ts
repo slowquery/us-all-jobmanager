@@ -11,8 +11,8 @@ const SCHEDULER_TRACER_NAME = 'us-all-job-manager-scheduler';
  * 스팬 → job별 자식 스팬", 09-final-design.md 확정 #12).
  *
  * `ProcessPendingJobsUseCase`(application)는 `JobProcessor` 인터페이스만 의존하며 이 데코레이터의
- * 존재를 알지 못한다 — 스팬 생성은 DI 배선(`app.module.ts`)에서 `DefaultJobProcessor` 인스턴스를
- * 이 클래스로 감싸 등록하는 방식으로 바깥에서 주입된다(계측은 adapter 계층 한정 원칙, 도메인/
+ * 존재를 알지 못한다 — 스팬 생성은 DI 배선(`scheduler.module.ts`의 `job-processor.factory`)에서 delegate
+ * 처리기(`DefaultJobProcessor` 또는 `DispatchingJobProcessor`)를 이 클래스로 감싸 등록하는 방식으로 바깥에서 주입된다(계측은 adapter 계층 한정 원칙, 도메인/
  * 유스케이스 무침투 — application/domain에 `@opentelemetry/*` import 금지).
  *
  * 열린 자식 스팬은 `JobSchedulerAdapter.tick()`이 여는 `scheduler.tick` 루트 스팬의 활성
