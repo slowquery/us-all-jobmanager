@@ -1,7 +1,7 @@
 import { Job } from '../../domain/job';
 import { JobRepository } from '../ports/job-repository.port';
 import { LoggerPort } from '../ports/logger.port';
-import { JobProcessor } from '../ports/job-processor.strategy';
+import { JobProcessOutcome, JobProcessor } from '../ports/job-processor.strategy';
 
 /** 1 tick당 조회·처리할 최대 job 건수(09-final-design.md 확정 #7: 60초/10건). */
 export const SCHEDULER_BATCH_SIZE = 10;
@@ -74,7 +74,21 @@ export class ProcessPendingJobsUseCase {
     const succeededIds: string[] = [];
     const failedIds: string[] = [];
     for (const job of claimed.committed) {
-      const outcome = await this.jobProcessor.process(job);
+      let outcome: JobProcessOutcome;
+      try {
+        outcome = await this.jobProcessor.process(job);
+      } catch {
+        // JobProcessor 오류 계약(no-throw)을 위반한 구현체 방어: 예외를 삼켜 해당 job만 failed로
+        // 처리하고, 배치 잔여 job이 processing에 고착되지 않게 한다(선점→락 밖 처리→커밋 blast radius 차단).
+        this.logger.log({
+          type: 'error',
+          level: 'error',
+          source: 'scheduler',
+          message: `job processor threw for job ${job.id}`,
+          errorCode: 'JOB_PROCESSOR_THREW',
+        });
+        outcome = { outcome: 'failed' };
+      }
       if (outcome.outcome === 'completed') {
         succeededIds.push(job.id);
       } else {

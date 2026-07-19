@@ -4022,6 +4022,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"dotenv@npm:^16.4.7":
+  version: 16.6.1
+  resolution: "dotenv@npm:16.6.1"
+  checksum: 10c0/15ce56608326ea0d1d9414a5c8ee6dcf0fffc79d2c16422b4ac2268e7e2d76ff5a572d37ffe747c377de12005f14b3cc22361e79fc7f1061cce81f77d2c973dc
+  languageName: node
+  linkType: hard
+
 "dunder-proto@npm:^1.0.0, dunder-proto@npm:^1.0.1":
   version: 1.0.1
   resolution: "dunder-proto@npm:1.0.1"
@@ -8629,6 +8636,7 @@ __metadata:
     "@typescript-eslint/parser": "npm:^8.64.0"
     class-transformer: "npm:^0.5.1"
     class-validator: "npm:^0.15.1"
+    dotenv: "npm:^16.4.7"
     eslint: "npm:^8.57.1"
     eslint-config-airbnb: "npm:^19.0.4"
     eslint-import-resolver-typescript: "npm:^4.4.5"

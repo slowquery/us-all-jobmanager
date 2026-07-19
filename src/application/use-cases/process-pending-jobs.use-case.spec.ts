@@ -168,3 +168,80 @@ describe('ProcessPendingJobsUseCase', () => {
     expect((await repository.list()).filter((job) => job.status === 'pending')).toHaveLength(5);
   });
 });
+
+describe('ProcessPendingJobsUseCase - JobProcessor no-throw 계약 위반 방어(try/catch 안전망)', () => {
+  it('처리기가 특정 job에서 throw하면 그 job만 failed로 커밋되고 나머지 job은 정상적으로 completed 처리되며 JOB_PROCESSOR_THREW 에러 로그가 남는다', async () => {
+    const repository = new InMemoryJobRepository();
+    repository.seed(makeJob({
+      id: 'ok-1',
+      status: 'pending',
+    }));
+    repository.seed(makeJob({
+      id: 'throws',
+      status: 'pending',
+    }));
+    repository.seed(makeJob({
+      id: 'ok-2',
+      status: 'pending',
+    }));
+    const logger = new InMemoryLogger();
+    const processor = {
+      async process(job: Job) {
+        if (job.id === 'throws') {
+          throw new Error('boom');
+        }
+        return { outcome: 'completed' as const };
+      },
+    };
+    const useCase = new ProcessPendingJobsUseCase(repository, processor, logger);
+
+    const result = await useCase.execute();
+
+    expect(result).toEqual({
+      batchSize: 3,
+      succeeded: 2,
+      failed: 1,
+    });
+    expect(await repository.findById('ok-1')).toMatchObject({ status: 'completed' });
+    expect(await repository.findById('ok-2')).toMatchObject({ status: 'completed' });
+    expect(await repository.findById('throws')).toMatchObject({ status: 'failed' });
+
+    const errorEvents = logger.events.filter((event) => event.type === 'error');
+    expect(errorEvents).toHaveLength(1);
+    expect(errorEvents[0]).toMatchObject({
+      type: 'error',
+      level: 'error',
+      source: 'scheduler',
+      errorCode: 'JOB_PROCESSOR_THREW',
+    });
+
+    const transitionEvents = logger.events.filter((event) => event.type === 'transition');
+    expect(transitionEvents).toContainEqual(
+      expect.objectContaining({
+        type: 'transition',
+        jobId: 'throws',
+        from: 'processing',
+        to: 'failed',
+        actor: 'scheduler',
+      }),
+    );
+    expect(transitionEvents).toContainEqual(
+      expect.objectContaining({
+        type: 'transition',
+        jobId: 'ok-1',
+        from: 'processing',
+        to: 'completed',
+        actor: 'scheduler',
+      }),
+    );
+    expect(transitionEvents).toContainEqual(
+      expect.objectContaining({
+        type: 'transition',
+        jobId: 'ok-2',
+        from: 'processing',
+        to: 'completed',
+        actor: 'scheduler',
+      }),
+    );
+  });
+});
