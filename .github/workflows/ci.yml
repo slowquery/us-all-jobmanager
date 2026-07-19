@@ -188,3 +188,58 @@ jobs:
             exit 1
           fi
           exit 0
+
+  # master로 squash 머지(=push)될 때 package.json version 기준 vX.Y.Z 태그를 멱등 부착하고,
+  # 머지 커밋 subject가 릴리스 형식('<type>: (X.Y.Z) 한글설명')인지 사후 검증한다(Rule 7).
+  tag:
+    needs: verify
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: vX.Y.Z 태그 멱등 부착
+        run: |
+          set -euo pipefail
+          version="$(node -p "require('./package.json').version")"
+          tag="v${version}"
+          echo "package.json version: ${version} → tag ${tag}"
+          if git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
+            echo "태그 ${tag} 이미 존재 — 생성 건너뜀(멱등)."
+          else
+            git tag -a "${tag}" -m "release ${tag}"
+            git push origin "${tag}"
+            echo "태그 ${tag} 생성·push 완료."
+          fi
+      - name: 머지 subject 릴리스 형식 검증
+        # 형식(정규식)을 바꾸면 .githooks/commit-msg의 subject 버전 검사도 함께 동기화할 것.
+        run: |
+          node <<'EOF'
+          const cp = require('child_process');
+          const subject = cp.execSync('git log -1 --format=%s', { encoding: 'utf8' }).trim();
+          const version = require('./package.json').version;
+          if (/^(Merge |Revert |fixup! |squash! |amend! )/.test(subject)) {
+            console.log('생성 subject(merge/revert 등) — 릴리스 형식 검증 건너뜀.');
+            process.exit(0);
+          }
+          const m = /^(feat|fix|chore|docs|style|refactor|test)(\([a-z0-9._/-]+\))?: \((\d+\.\d+\.\d+)\) (.+)$/.exec(subject);
+          if (!m) {
+            console.log(`::error::머지 subject가 릴리스 형식 '<type>: (X.Y.Z) 한글설명'이 아닙니다: '${subject}' (Rule 7).`);
+            process.exit(1);
+          }
+          if (m[3] !== version) {
+            console.log(`::error::subject 버전 '(${m[3]})' != package.json version '${version}' (Rule 7).`);
+            process.exit(1);
+          }
+          if (!/[\uAC00-\uD7A3]/.test(m[4])) {
+            console.log(`::error::머지 subject 설명은 한글이어야 합니다: '${m[4]}' (Rule 7/Rule 9).`);
+            process.exit(1);
+          }
+          console.log(`머지 subject 릴리스 형식 확인: ${subject}`);
+          EOF
