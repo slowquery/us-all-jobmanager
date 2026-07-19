@@ -191,6 +191,8 @@ yarn test:e2e      # supertest 기반 API e2e
   [HTTP 요청 로그](logs/20260719/observability-verification/10-loki-http-logs.png) ·
   [에러 로그](logs/20260719/observability-verification/11-loki-error-logs.png) ·
   [로그→트레이스 파생 필드(상호 이동)](logs/20260719/observability-verification/09-loki-to-tempo-derived-field.png)
+- **logs.txt 원본 스냅샷**:
+  [tick 처리 로그 상관 스냅샷(tick start→digest→transition→tick end, tickId/traceId 상관 5라인)](logs/20260719/news-digest-verification/logs-txt-snapshot.txt)
 
 ---
 
