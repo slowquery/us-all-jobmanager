@@ -29,4 +29,15 @@ if [ -n "$ver_line" ]; then
     exit 1
   fi
 fi
+# 릴리스 subject 형식: '<type>: (X.Y.Z) 설명'의 괄호 버전이 있으면 package.json version과 바이트 일치(Rule 7 머지 subject).
+subj_ver="$(printf '%s' "$desc" | sed -nE 's/^\(([0-9]+\.[0-9]+\.[0-9]+)\) .*/\1/p')"
+if [ -n "$subj_ver" ]; then
+  pkg="$(node -p "require('./package.json').version" 2>/dev/null || true)"
+  if [ -z "$pkg" ]; then
+    echo "governance/commit-msg: package.json version을 읽을 수 없어 subject 버전 '($subj_ver)' 검사를 건너뜁니다." >&2
+  elif [ "$subj_ver" != "$pkg" ]; then
+    echo "governance/commit-msg: subject 버전 '($subj_ver)' != package.json version '$pkg' (Rule 7 릴리스 subject 형식)." >&2
+    exit 1
+  fi
+fi
 exit 0
