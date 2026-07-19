@@ -2,6 +2,7 @@ import { Module, ValidationPipe } from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { JobRepository } from '../../application/ports/job-repository.port';
 import { LoggerPort } from '../../application/ports/logger.port';
+import { SupportedJobTypes } from '../../application/ports/supported-job-types.port';
 import { CreateJobUseCase } from '../../application/use-cases/create-job.use-case';
 import { DeleteJobUseCase } from '../../application/use-cases/delete-job.use-case';
 import { GetJobsUseCase } from '../../application/use-cases/get-jobs.use-case';
@@ -9,7 +10,7 @@ import { GetJobUseCase } from '../../application/use-cases/get-job.use-case';
 import { PatchJobUseCase } from '../../application/use-cases/patch-job.use-case';
 import { SearchJobsUseCase } from '../../application/use-cases/search-jobs.use-case';
 import { InfrastructureModule } from '../../infrastructure/infrastructure.module';
-import { JOB_REPOSITORY, LOGGER_PORT } from '../tokens';
+import { JOB_REPOSITORY, LOGGER_PORT, SUPPORTED_JOB_TYPES } from '../tokens';
 import { HttpExceptionFilter } from './http-exception.filter';
 import { JobsController } from './jobs.controller';
 import { LoggingInterceptor } from './logging.interceptor';
@@ -31,8 +32,14 @@ import { LoggingInterceptor } from './logging.interceptor';
   providers: [
     {
       provide: CreateJobUseCase,
-      useFactory: (repository: JobRepository): CreateJobUseCase => new CreateJobUseCase(repository),
-      inject: [JOB_REPOSITORY],
+      useFactory: (
+        repository: JobRepository,
+        supportedJobTypes: SupportedJobTypes,
+      ): CreateJobUseCase => new CreateJobUseCase(repository, supportedJobTypes),
+      inject: [
+        JOB_REPOSITORY,
+        SUPPORTED_JOB_TYPES,
+      ],
     },
     {
       provide: GetJobsUseCase,
