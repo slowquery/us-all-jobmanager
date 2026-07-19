@@ -4,6 +4,7 @@ import { ApiError, JobResponse, patchJob } from '../lib/api';
 import { useToast } from './ui/toast';
 import { StatusBadge } from './ui/badge';
 import { Button } from './ui/button';
+import { formatKst } from '../lib/format';
 
 export function JobDetailDialog({
   job,
@@ -107,11 +108,11 @@ export function JobDetailDialog({
             <dl className="grid grid-cols-2 gap-2 text-xs text-slate-400">
               <div>
                 <dt className="uppercase tracking-wide">Created</dt>
-                <dd>{new Date(job.createdAt).toLocaleString()}</dd>
+                <dd>{formatKst(job.createdAt)}</dd>
               </div>
               <div>
                 <dt className="uppercase tracking-wide">Updated</dt>
-                <dd>{new Date(job.updatedAt).toLocaleString()}</dd>
+                <dd>{formatKst(job.updatedAt)}</dd>
               </div>
             </dl>
           </div>

@@ -39,3 +39,17 @@
 
 ## 산출물
 `e2e-cases.md`(구현 이전 작성), 케이스별 스크린샷 `E2E-*.png`, `e2e-report.md`(본 문서), `e2e-run.json`(기계 판독 판정).
+
+---
+
+## 추가 실행(2026-07-19) — KST 표기 + 생성 기능
+사용자 요청으로 (1) 모든 시각을 KST로 표기, (2) 누락되어 있던 새 작업 생성 기능을 구현하고 스크린샷을 재촬영했다.
+
+| ID | 케이스 | 판정 | 관측 API | 증거 |
+|---|---|---|---|---|
+| KST | 목록/상세 시각 KST 표기 | ✅ | — | E2E-01-load.png(Updated 열), E2E-06-detail-modal.png(Created/Updated) |
+| E2E-12 | 새 작업 생성(버튼→모달→POST) | ✅ | POST /jobs 201 (pending) | E2E-12-create-modal.png, E2E-12-create-after.png |
+
+- **KST**: `admin-ui/src/lib/format.ts`의 `formatKst`가 `Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',hour12:false})`로 포맷. 시드 `09:00:00Z`가 목록·모달 모두 `2026. 07. 18. 18:00:00 KST`로 표기됨을 브라우저에서 확인.
+- **생성**: `새 작업` 버튼 → `create-job-dialog`(제목 필수 검증, 설명 선택) → `createJob` → 201 → 목록 즉시 반영(refresh), 신규 행 Pending. 브라우저 확인: 카운트 5→6, `POST /jobs` status=pending.
+- E2E-01/06/07/12 스크린샷을 KST 표기 상태로 재촬영.

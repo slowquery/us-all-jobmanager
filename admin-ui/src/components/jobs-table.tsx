@@ -3,6 +3,7 @@ import { JobResponse } from '../lib/api';
 import { StatusBadge } from './ui/badge';
 import { Button } from './ui/button';
 import { Tooltip } from './ui/tooltip';
+import { formatKst } from '../lib/format';
 
 export function JobsTable({
   jobs,
@@ -70,7 +71,7 @@ export function JobsTable({
                   <StatusBadge status={job.status} />
                 </td>
                 <td className="px-4 py-3 text-slate-400">
-                  {new Date(job.updatedAt).toLocaleString()}
+                  {formatKst(job.updatedAt)}
                 </td>
                 <td className="px-4 py-3 text-right">
                   {isProcessing ? (

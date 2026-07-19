@@ -42,3 +42,9 @@
 - `e2e-report.md` — 케이스 → 판정(pass/fail) → 증거 스크린샷 → 관측 API 상태
 - `e2e-run.json` — 기계 판독 판정 배열: `[{ id, status: "pass"|"fail", evidence: ["<png>"], observedApi: "<status/code>", notes }]`
 - (선택) 브라우저 콘솔/네트워크 로그 발췌
+
+---
+
+## 추가(2026-07-19): KST 표기 + 생성 기능
+- **모든 시각 KST 표기**: 목록 Updated 열·상세 모달 Created/Updated를 `formatKst`(Asia/Seoul)로 표기. 예) 시드 `09:00:00Z` → `2026. 07. 18. 18:00:00 KST`.
+- **E2E-12 새 작업 생성**: 툴바 `새 작업` 버튼 → 생성 모달(제목 필수, 설명 선택) → `생성` → `POST /jobs` 201 → 다이얼로그 닫힘, '작업이 생성되었습니다' 토스트, 신규 Pending 행 추가(카운트 5→6), API `status=pending` 확인. 증거: `E2E-12-create-modal.png`, `E2E-12-create-after.png`.

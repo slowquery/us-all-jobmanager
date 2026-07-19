@@ -2,8 +2,8 @@
   "suite": "admin-page browser E2E",
   "runner": "GJC built-in browser (puppeteer/Chromium)",
   "target": "http://localhost:3200/admin/ (NestJS static-served committed admin-ui Vite build)",
-  "executedAt": "2026-07-18 (KST)",
-  "summary": { "total": 12, "pass": 12, "fail": 0 },
+  "executedAt": "2026-07-18 (KST) · 2026-07-19 재실행(모든 시각 KST 표기 + 새 작업 생성 기능 추가)",
+  "summary": { "total": 13, "pass": 13, "fail": 0 },
   "cases": [
     { "id": "E2E-01", "status": "pass", "evidence": ["E2E-01-load.png"], "observedApi": "GET /jobs 200", "notes": "다크 테마(html.dark, bodyBg rgb(2,6,23)); bento 타일 Total5/Pending2/Processing1/Completed1/Failed1 == 시드." },
     { "id": "E2E-02", "status": "pass", "evidence": ["E2E-01-load.png"], "observedApi": "GET /jobs 200", "notes": "5행 렌더, 상태 뱃지 색/텍스트 정확(amber/blue/green/red)." },
@@ -16,7 +16,8 @@
     { "id": "E2E-09", "status": "pass", "evidence": ["E2E-09-confirm.png", "E2E-09-after.png"], "observedApi": "DELETE /jobs/:id 204; GET → 404 NOT_FOUND", "notes": "AlertDialog 확인→204→행 제거(5→4)→토스트; GET 삭제 id → NOT_FOUND." },
     { "id": "E2E-09b", "status": "pass", "evidence": ["E2E-09-after.png", "E2E-01-load.png"], "observedApi": "DELETE /jobs/:id(processing) 409 JOB_IN_PROGRESS", "notes": "processing 행 삭제 버튼 disabled=true; 강제 API DELETE → 409 JOB_IN_PROGRESS." },
     { "id": "E2E-10", "status": "pass", "evidence": ["E2E-10-t0-pending.png", "E2E-10-t1-advanced.png"], "observedApi": "POST /jobs 201; 스케줄러 전이", "notes": "신규 작업이 5s 폴링으로 Pending 표시(수동 새로고침 없음)→tick+poll 후 Completed로 자동 전이." },
-    { "id": "E2E-11", "status": "pass", "evidence": ["E2E-11-error-state.png"], "observedApi": "DELETE stale id → 404 NOT_FOUND", "notes": "백엔드에서 삭제된 작업을 UI에서 삭제 시도→'이미 삭제된 작업입니다' 에러 토스트; UI 사용 가능 유지(행/검색/새로고침 정상)." }
+    { "id": "E2E-11", "status": "pass", "evidence": ["E2E-11-error-state.png"], "observedApi": "DELETE stale id → 404 NOT_FOUND", "notes": "백엔드에서 삭제된 작업을 UI에서 삭제 시도→'이미 삭제된 작업입니다' 에러 토스트; UI 사용 가능 유지(행/검색/새로고침 정상)." },
+    { "id": "E2E-12", "status": "pass", "evidence": ["E2E-12-create-modal.png", "E2E-12-create-after.png"], "observedApi": "POST /jobs 201 (status=pending)", "notes": "새 작업 버튼→생성 모달(제목/설명)→생성→다이얼로그 닫힘, '작업이 생성되었습니다' 토스트, 신규 Pending 행 추가(5→6), API status=pending 확인." }
   ],
-  "notes": "인증은 범위 외(보안 리뷰 인지). 스케줄러 SCHEDULER_TICK_MS=60s로 시드 pending 작업이 실행 중 completed로 전이됨(정상 동작). 테스트는 임시 cwd(/tmp/e2e-run)에서 백엔드를 기동해 워크트리 jobs.json을 오염시키지 않음. E2E-06 포커스 복귀와 E2E-07 저장후 닫힘은 초기 관찰된 편차를 수정 후 재검증 통과."
+  "notes": "인증은 범위 외(보안 리뷰 인지). 모든 시각은 Asia/Seoul(KST)로 표기(formatKst, 예 09:00Z→18:00 KST). 스케줄러 SCHEDULER_TICK_MS=60s로 시드 pending 작업이 실행 중 completed로 전이됨(정상 동작). 테스트는 임시 cwd(/tmp/e2e-run)에서 백엔드를 기동해 워크트리 jobs.json을 오염시키지 않음. E2E-06 포커스 복귀·E2E-07 저장후 닫힘은 초기 편차 수정 후 재검증 통과. 2026-07-19 재실행: KST 표기 검증 + E2E-12(생성) 추가, 스크린샷 재촬영."
 }

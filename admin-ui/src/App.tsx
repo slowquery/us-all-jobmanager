@@ -5,6 +5,7 @@ import { useDebouncedValue } from './hooks/use-debounce';
 import { StatTiles } from './components/stat-tiles';
 import { JobsTable } from './components/jobs-table';
 import { JobDetailDialog } from './components/job-detail-dialog';
+import { CreateJobDialog } from './components/create-job-dialog';
 import { ConfirmDialog } from './components/ui/alert-dialog';
 import { Button } from './components/ui/button';
 import { TooltipProvider } from './components/ui/tooltip';
@@ -27,6 +28,7 @@ function AdminPage() {
 
   const [selectedJob, setSelectedJob] = useState<JobResponse | null>(null);
   const [pendingDelete, setPendingDelete] = useState<JobResponse | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const handleUpdated = (updated: JobResponse) => {
     setSelectedJob(updated);
@@ -90,6 +92,12 @@ function AdminPage() {
             </select>
           </div>
           <Button
+            data-testid="new-job-btn"
+            onClick={() => setCreateOpen(true)}
+          >
+            새 작업
+          </Button>
+          <Button
             variant="secondary"
             data-testid="refresh-btn"
             onClick={() => refresh()}
@@ -127,6 +135,12 @@ function AdminPage() {
           }
         }}
         onUpdated={handleUpdated}
+      />
+
+      <CreateJobDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onCreated={() => refresh()}
       />
 
       <ConfirmDialog

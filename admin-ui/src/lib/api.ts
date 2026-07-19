@@ -19,7 +19,7 @@ export type ErrorCode =
   | 'INVALID_TRANSITION'
   | 'RETRY_LIMIT_EXCEEDED'
   | 'JOB_IN_PROGRESS'
-  | 'VALIDATION_ERROR'
+  | 'VALIDATION_FAILED'
   | string;
 
 export interface ApiErrorEnvelope {
