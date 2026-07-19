@@ -8,6 +8,7 @@ import { NestFactory } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import type { NextFunction, Request, Response } from 'express';
 import { join } from 'node:path';
 import { existsSync } from 'node:fs';
 // eslint-disable-next-line import/order -- otel.bootstrap은 adapter 코드(@opentelemetry 사용)를
@@ -20,6 +21,15 @@ initializeOtel();
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // 보안 헤더(최소 하드닝): 인증은 범위 외(수용 리스크)이므로, 미인증 관리자 표면의 잔여 위험을
+  // 줄이기 위해 클릭재킹/MIME 스니핑/레퍼러 유출을 방지하는 안전한(SPA 비파괴) 헤더만 부여한다.
+  app.use((_req: Request, res: Response, next: NextFunction) => {
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    next();
+  });
 
   // 관리자 SPA(admin-ui Vite 빌드 산출물) 정적 서빙. dist/main.js 기준 상대 경로로 해석해
   // nest start·node dist/main.js·Docker 어디서든 <root>/public을 가리킨다(cwd 비의존).
