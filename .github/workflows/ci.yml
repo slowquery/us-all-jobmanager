@@ -218,6 +218,7 @@ jobs:
             echo "태그 ${tag} 생성·push 완료."
           fi
       - name: 머지 subject 릴리스 형식 검증
+        # 형식(정규식)을 바꾸면 .githooks/commit-msg의 subject 버전 검사도 함께 동기화할 것.
         run: |
           node <<'EOF'
           const cp = require('child_process');
