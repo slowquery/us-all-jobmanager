@@ -6,8 +6,8 @@ NestJS 기반 작업(Job) 관리 백엔드입니다(어스얼라이언스 백엔
 [node-json-db](https://www.npmjs.com/package/node-json-db))에 영속화하며, API와 스케줄러가 같은 파일에
 동시에 접근해도 손실·깨짐이 없도록 인프로세스 직렬화 큐로 동시성을 제어합니다.
 
-- **내부 구조·동작 상세**는 [ARCHITECTURE.md](./ARCHITECTURE.md)에 정리했습니다(API·스케줄러 구현과 동작,
-  함수 흐름도, 뉴스 전달 프로그램).
+- **아키텍처 설계·내부 구조·동작 상세**는 [ARCHITECTURE.md](./ARCHITECTURE.md)에 정리했습니다 — 헥사고날 계층 구조와
+  의존성 규칙, 부트스트랩·합성 루트, API·스케줄러 구현과 동작, 함수 흐름도 3종, 뉴스 전달 프로그램을 다룹니다.
 - 설계 결정의 정본은 [`logs/20260717/implementation-design/09-final-design.md`](./logs/20260717/implementation-design/09-final-design.md)입니다.
 
 > ⚠️ 이 저장소는 **public** 입니다. 커밋 전 반드시 시크릿(키·토큰·내부 경로·개인정보)을 스크러빙하세요.
@@ -191,6 +191,8 @@ yarn test:e2e      # supertest 기반 API e2e
   [HTTP 요청 로그](logs/20260719/observability-verification/10-loki-http-logs.png) ·
   [에러 로그](logs/20260719/observability-verification/11-loki-error-logs.png) ·
   [로그→트레이스 파생 필드(상호 이동)](logs/20260719/observability-verification/09-loki-to-tempo-derived-field.png)
+- **logs.txt 원본 스냅샷**:
+  [tick 처리 로그 상관 스냅샷(tick start→digest→transition→tick end, tickId/traceId 상관 5라인)](logs/20260719/news-digest-verification/logs-txt-snapshot.txt)
 
 ---
 
