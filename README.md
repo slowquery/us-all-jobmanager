@@ -194,6 +194,22 @@ yarn test:e2e      # supertest 기반 API e2e
 - **logs.txt 원본 스냅샷**:
   [tick 처리 로그 상관 스냅샷(tick start→digest→transition→tick end, tickId/traceId 상관 5라인)](logs/20260719/news-digest-verification/logs-txt-snapshot.txt)
 
+### 3.3 뉴스 다이제스트 실 스택 라이브 실행(슬랙 전달 본문 로깅)
+
+`docker-compose` 실 스택을 띄우고 `jobs.json`에 시드한 `news-digest`가 스케줄러 tick에 자동 처리되어 실제 파이프라인(RSS 수집→Gemini 요약→Slack 전송)을 완주한 **라이브 실행** 결과입니다. 전 과정·재현 커맨드·비밀 위생은 [`logs/20260719/news-digest-live-run/README.md`](logs/20260719/news-digest-live-run/README.md)에, 조회 쿼리는 [`07-loki-queries.md`](logs/20260719/news-digest-live-run/07-loki-queries.md)에 정리했습니다(실행 traceId `77e77947…`. ②③④는 span 내부라 이 traceId를 공유하고, ①의 tick start↔end는 tickId `2a0d2abe…`로 상관됩니다).
+
+- **① 실 스택 기동 + 시드 자동 실행** — `jobs.json`의 `news-digest`(pending)가 tick(batchSize=2)에서 `completed`로 전이합니다(tick start↔end 상관 키는 tickId).
+  [logs.txt 성공 tick 상관 스냅샷(tick start→news digest completed→transition→tick end)](logs/20260719/news-digest-live-run/06-logs-txt-tick-snapshot.txt)
+- **② 슬랙에 전달된 본문 → Loki 로깅** — WebhookSlackNotifier가 Slack으로 POST한 다이제스트 본문 그 자체를 Loki `{source="slack-delivery"}` 스트림으로 적재해 Grafana Explore에서 조회합니다(이 적재는 **검증용 사이드 채널**입니다 — 애플리케이션 소스는 수정하지 않았고, 앱이 본문을 직접 logs.txt에 남기게 하려면 별도 슬라이스가 필요합니다).
+  [Loki 전달 본문 조회 화면](logs/20260719/news-digest-live-run/01-loki-slack-delivery-explore.png) ·
+  [전달 본문 원문 텍스트](logs/20260719/news-digest-live-run/05-slack-delivery-text.txt)
+- **③ digest 메타데이터 이벤트(logs.txt→Alloy→Loki)** — `outcome=completed`·`articleCount=15`·`groupCount=4`·`model=gemini-flash-lite-latest` 필드가 남습니다.
+  [Loki digest 메타데이터 이벤트](logs/20260719/news-digest-live-run/03-loki-scheduler-digest-event.png)
+- **④ 뉴스 파이프라인 Tempo 스팬 계층** — `scheduler.tick → scheduler.process-job → news.fetch/news.summarize/news.notify`(6 spans).
+  [Tempo 뉴스 스팬 계층](logs/20260719/news-digest-live-run/04-tempo-news-trace.png)
+
+> **주의**: `jobs.json`의 news-digest 시드는 리포에 영구 `pending`으로 남으므로, `NEWS_DIGEST_ENABLED=true` + 비밀 2종을 갖춘 실 스택을 새로 기동할 때마다 기동 직후 1회 실제 RSS/Gemini/Slack 호출이 발화합니다(Gemini 쿼터 소모·실 Slack 전송). 비활성이거나 키가 없으면 무동작 폴백이라 외부 호출이 없습니다.
+
 ---
 
 ## 4. API 사용법

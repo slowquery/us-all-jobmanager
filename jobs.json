@@ -35,6 +35,15 @@
       "retryCount": 1,
       "createdAt": "2026-07-17T00:05:00.000Z",
       "updatedAt": "2026-07-17T00:06:00.000Z"
+    },
+    {
+      "id": "d5f8a2b1-6c3e-4d7a-9b0f-1e2c3d4a5b6c",
+      "title": "news-digest",
+      "description": "뉴스 다이제스트 파이프라인(RSS→Gemini 요약→Slack 전송) 라우팅용 sentinel 제목 pending 시딩 데이터. NEWS_DIGEST_ENABLED=true + 비밀(GEMINI_API_KEY·SLACK_WEBHOOK_URL) 주입 시 스케줄러 tick이 선점해 실제 다이제스트를 Slack으로 전달한다. 비활성/키 미주입이면 기본 처리기로 완료 전이한다.",
+      "status": "pending",
+      "retryCount": 0,
+      "createdAt": "2026-07-19T00:00:00.000Z",
+      "updatedAt": "2026-07-19T00:00:00.000Z"
     }
   ]
 }

@@ -1,0 +1,10 @@
+# logs.txt(NDJSON) — news-digest 성공 tick 상관 발췌 (tickId 2a0d2abe-cbee-41f3-9d8f-33b52aef53ac)
+# 상관 키 주의: tick start↔end는 tickId로 상관한다(tick started 라인은 scheduler.tick active span 이전에 emit돼 별도 fallback traceId affe7c19…를 가짐). digest/transition/tick completed/tick ended는 span 내부라 동일 traceId 77e77947070654d665a5da2af3280f23을 공유한다.
+# Alloy가 이 파일을 tail해 Loki로 push한다. digest '결과 문구'는 Slack으로 전달되고, logs.txt에는 digest 메타데이터가 남는다.
+
+{"timestamp":"2026-07-19T15:43:05.138Z","traceId":"affe7c194fc04a4637595fb49b0f8412","level":"info","source":"scheduler","message":"tick started","tickId":"2a0d2abe-cbee-41f3-9d8f-33b52aef53ac","phase":"start"}
+{"timestamp":"2026-07-19T15:43:08.517Z","traceId":"77e77947070654d665a5da2af3280f23","spanId":"f1a251cc1d5f4af7","level":"info","source":"scheduler","message":"news digest completed","outcome":"completed","digestDurationMs":3376,"articleCount":15,"groupCount":4,"model":"gemini-flash-lite-latest"}
+{"timestamp":"2026-07-19T15:43:08.517Z","traceId":"77e77947070654d665a5da2af3280f23","spanId":"cfadb5bf1be3f298","level":"info","source":"scheduler","message":"transition committed","jobId":"92dc6bef-1f52-41cb-bea7-f6e1beb882ec","from":"processing","to":"completed","actor":"scheduler"}
+{"timestamp":"2026-07-19T15:43:08.517Z","traceId":"77e77947070654d665a5da2af3280f23","spanId":"cfadb5bf1be3f298","level":"info","source":"scheduler","message":"transition committed","jobId":"d5f8a2b1-6c3e-4d7a-9b0f-1e2c3d4a5b6c","from":"processing","to":"completed","actor":"scheduler"}
+{"timestamp":"2026-07-19T15:43:08.517Z","traceId":"77e77947070654d665a5da2af3280f23","spanId":"cfadb5bf1be3f298","level":"info","source":"scheduler","message":"tick completed","batchSize":2,"succeeded":2,"failed":0}
+{"timestamp":"2026-07-19T15:43:08.518Z","traceId":"77e77947070654d665a5da2af3280f23","spanId":"cfadb5bf1be3f298","level":"info","source":"scheduler","message":"tick ended","tickId":"2a0d2abe-cbee-41f3-9d8f-33b52aef53ac","phase":"end","durationMs":3381}
