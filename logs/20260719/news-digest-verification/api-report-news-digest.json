@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "kind": "api-test-report",
+  "surface": "api",
+  "target": "news-digest 파이프라인 실증(app /jobs + Grafana Loki/Tempo proxy + slack-mock)",
+  "generatedAt": "2026-07-19T09:40:16Z",
+  "cases": [
+    {
+      "name": "AC1/AC2 관리자 등록 news-digest job completed 존재",
+      "result": {
+        "total": 2,
+        "completed": 1
+      },
+      "pass": true
+    },
+    {
+      "name": "AC3 Loki digest 이벤트 outcome=completed(model gemini-flash-lite-latest)",
+      "result": {
+        "completed_series": [
+          {
+            "model": "gemini-flash-lite-latest",
+            "outcome": "completed"
+          }
+        ]
+      },
+      "pass": true
+    },
+    {
+      "name": "AC4 Tempo news.* 스팬(fetch/summarize/notify) 존재",
+      "result": {
+        "spanNames": {
+          "news.fetch": 1,
+          "news.summarize": 1,
+          "news.notify": 1,
+          "scheduler.process-job": 1,
+          "scheduler.tick": 1
+        },
+        "news_spans": [
+          "news.fetch",
+          "news.summarize",
+          "news.notify"
+        ]
+      },
+      "pass": true
+    },
+    {
+      "name": "AC5 slack-mock 결과 문구 수신",
+      "result": {
+        "received": true
+      },
+      "pass": true
+    }
+  ],
+  "pass": true
+}

@@ -1,0 +1,9 @@
+# logs.txt 크론(tick) 실행 로그 스냅샷 — 상관 키: tickId=83e26623-654c-4b73-9fe4-10bb64d58a96, traceId=1a723beaa6959ac46385b5bee7e2c845
+# 상관 절차: tick end 라인의 traceId → 동일 traceId digest/transition 라인. tick start 라인은 tickId로 매칭(fallback traceId).
+# 추출 라인 수: 5 (source=scheduler 전용, 비밀 없음)
+
+{"timestamp": "2026-07-19T09:34:18.296Z", "traceId": "21d06cd9cbe16d363c7abfa21e5c0fb7", "level": "info", "source": "scheduler", "message": "tick started", "tickId": "83e26623-654c-4b73-9fe4-10bb64d58a96", "phase": "start"}
+{"timestamp": "2026-07-19T09:34:21.693Z", "traceId": "1a723beaa6959ac46385b5bee7e2c845", "spanId": "62d115cdaafed05f", "level": "info", "source": "scheduler", "message": "news digest completed", "outcome": "completed", "digestDurationMs": 3394, "articleCount": 15, "groupCount": 4, "model": "gemini-flash-lite-latest"}
+{"timestamp": "2026-07-19T09:34:21.694Z", "traceId": "1a723beaa6959ac46385b5bee7e2c845", "spanId": "31ef6b82deb08030", "level": "info", "source": "scheduler", "message": "tick ended", "tickId": "83e26623-654c-4b73-9fe4-10bb64d58a96", "phase": "end", "durationMs": 3398}
+{"timestamp": "2026-07-19T09:34:21.694Z", "traceId": "1a723beaa6959ac46385b5bee7e2c845", "spanId": "31ef6b82deb08030", "level": "info", "source": "scheduler", "message": "transition committed", "jobId": "5d4a5c32-9e64-4e1d-b89f-30fc50f12525", "from": "processing", "to": "completed", "actor": "scheduler"}
+{"timestamp": "2026-07-19T09:34:21.694Z", "traceId": "1a723beaa6959ac46385b5bee7e2c845", "spanId": "31ef6b82deb08030", "level": "info", "source": "scheduler", "message": "tick completed", "batchSize": 1, "succeeded": 1, "failed": 0}

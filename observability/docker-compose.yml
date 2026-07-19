@@ -13,6 +13,16 @@ services:
     environment:
       PORT: "3000"
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo:4318"
+      # news-digest 파이프라인 활성화용 설정. 비밀(GEMINI_API_KEY·SLACK_WEBHOOK_URL)은 리터럴로
+      # 커밋하지 않고 호스트 환경변수에서만 보간 주입한다(PUBLIC repo, 값이 없으면 빈 문자열→비활성).
+      NEWS_DIGEST_ENABLED: "${NEWS_DIGEST_ENABLED:-}"
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      GEMINI_MODEL: "${GEMINI_MODEL:-}"
+      SLACK_WEBHOOK_URL: "${SLACK_WEBHOOK_URL:-}"
+      NEWS_FEED_URL: "${NEWS_FEED_URL:-}"
+      NEWS_DIGEST_JOB_TITLE: "${NEWS_DIGEST_JOB_TITLE:-}"
+      NEWS_DIGEST_TIMEOUT_MS: "${NEWS_DIGEST_TIMEOUT_MS:-}"
+      NEWS_DIGEST_MAX_HEADLINES: "${NEWS_DIGEST_MAX_HEADLINES:-}"
     volumes:
       # logs.txt/jobs.json은 컨테이너 cwd(/app/run, Dockerfile 참조) 기준 상대 경로에 쓰인다.
       # alloy가 동일 볼륨을 read-only로 마운트해 logs.txt를 tail한다.
@@ -72,6 +82,19 @@ services:
       - app-logs:/var/log/app:ro
     depends_on:
       - loki
+    networks:
+      - observability
+
+  # news-digest 검증 전용 Slack 목(mock) 수신기. `profiles`로 게이팅해 기본 `up -d`(관측 5서비스)에는
+  # 뜨지 않고, `--profile news-digest-verify` 지정 시에만 기동한다. app이 SLACK_WEBHOOK_URL로
+  # http://slack-mock:9090/webhook 을 POST하면 다이제스트 "결과 문구"를 stdout에 기록한다(즉시 200 OK).
+  slack-mock:
+    image: node:24-slim
+    profiles:
+      - news-digest-verify
+    command: ["node", "/srv/catcher.mjs"]
+    volumes:
+      - ../scripts/slack-mock-catcher.mjs:/srv/catcher.mjs:ro
     networks:
       - observability
 

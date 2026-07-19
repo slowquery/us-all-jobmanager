@@ -4,6 +4,9 @@ build/
 *.tsbuildinfo
 logs.txt
 jobs.json
+# 비밀 위생: 루트 .env(gitignored)가 build 스테이지 COPY . . 로 이미지 레이어에 박제되는 것을 차단한다.
+.env
+.env.*
 coverage/
 .nyc_output/
 .git/
